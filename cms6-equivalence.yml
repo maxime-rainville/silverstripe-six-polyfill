@@ -1,0 +1,43 @@
+# Mapping of CMS 5 classes to their CMS 6 namespace equivalents
+# Format: 'CMS5_Class_Path': 'CMS6_Class_Path'
+
+# Forms Validation Classes
+'src/Forms/Validator.php': 'src/Forms/Validation/Validator.php'
+'src/Forms/CompositeValidator.php': 'src/Forms/Validation/CompositeValidator.php'
+'src/Forms/RequiredFields.php': 'src/Forms/Validation/RequiredFieldsValidator.php'
+
+# ORM Validation Classes
+'src/ORM/ValidationException.php': 'src/Core/Validation/ValidationException.php'
+'src/ORM/ValidationResult.php': 'src/Core/Validation/ValidationResult.php'
+
+# ORM Array and List Classes (Moving to Model\List)
+'src/ORM/ArrayLib.php': 'src/Core/ArrayLib.php'
+'src/ORM/ArrayList.php': 'src/Model/List/ArrayList.php'
+'src/ORM/GroupedList.php': 'src/Model/List/GroupedList.php'
+'src/ORM/ListDecorator.php': 'src/Model/List/ListDecorator.php'
+'src/ORM/Map.php': 'src/Model/List/Map.php'
+'src/ORM/PaginatedList.php': 'src/Model/List/PaginatedList.php'
+
+# View Classes (Moving to Model)
+'src/View/ArrayData.php': 'src/Model/ArrayData.php'
+'src/View/ViewableData.php': 'src/Model/ModelData.php'
+'src/View/ViewableData_Customised.php': 'src/Model/ModelDataCustomised.php'
+'src/View/ViewableData_Debugger.php': 'src/Model/ModelDataDebugger.php'
+
+# Template Engine Classes
+'src/View/SSTemplateParseException.php': 'src/TemplateEngine/Exception/SSTemplateParseException.php'
+'src/View/SSTemplateParser.php': 'src/TemplateEngine/SSTemplateParser.php'
+'src/View/SSViewer_BasicIteratorSupport.php': 'src/Model/BasicIteratorSupport.php'
+'src/View/SSViewer_Scope.php': 'src/TemplateEngine/SSViewer_Scope.php'
+
+# Security Classes
+'src/Security/PasswordValidator.php': 'src/Security/Validation/RulesPasswordValidator.php'
+
+# Additional ORM interfaces and traits that may be moved
+'src/ORM/SS_List.php': 'src/Model/List/SS_List.php'
+'src/ORM/Filterable.php': 'src/Model/List/Filterable.php'
+'src/ORM/Limitable.php': 'src/Model/List/Limitable.php'
+'src/ORM/Sortable.php': 'src/Model/List/Sortable.php'
+
+# HTTP and Control classes that may have validation-related moves
+'src/Control/HTTPResponse_Exception.php': 'src/Core/Exception/HTTPResponse_Exception.php'

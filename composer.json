@@ -1,0 +1,64 @@
+{
+    "name": "archiprocode/silverstripe-six-polyfill",
+    "description": "Silverstripe CMS 6 namespace polyfill for CMS 5. Provides CMS 6 class namespaces in CMS 5 to allow early migration.",
+    "type": "silverstripe-vendormodule",
+    "keywords": [
+        "silverstripe",
+        "cms",
+        "cms5",
+        "cms6",
+        "polyfill",
+        "migration",
+        "namespace"
+    ],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Archiprocode",
+            "email": "contact@archiprocode.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "silverstripe/framework": "^5.4",
+        "symfony/yaml": "^6.0",
+        "symfony/process": "^6.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6",
+        "squizlabs/php_codesniffer": "^3.7",
+        "rector/rector": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SilverStripe\\": "src/",
+            "SilverStripePolyfill\\Rector\\Rules\\": "rector/Rules/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SilverStripe\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "installer-name": "silverstripe-six-polyfill",
+        "expose": [
+            "client/dist"
+        ]
+    },
+    "scripts": {
+        "refresh": "php refresh.php",
+        "rector": "vendor/bin/rector process --config=rector.php",
+        "rector-dry-run": "vendor/bin/rector process --config=rector.php --dry-run",
+        "test": "phpunit tests/",
+        "lint": "phpcs src/ tests/ --standard=PSR12"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "silverstripe/vendor-plugin": true
+        }
+    }
+}

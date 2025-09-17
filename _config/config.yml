@@ -1,0 +1,8 @@
+---
+Name: silverstripe-six-polyfill
+---
+# Configuration for Silverstripe CMS 6 polyfill module
+# This module provides CMS 6 namespace compatibility for CMS 5
+
+# No specific configuration needed - this module only provides class aliases
+# and namespace compatibility through autoloading
