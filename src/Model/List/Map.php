@@ -1,6 +1,15 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\Map
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model\List;
 
 use ArrayAccess;
 use BadMethodCallException;
@@ -8,7 +17,6 @@ use Countable;
 use IteratorAggregate;
 use SilverStripe\Dev\Deprecation;
 use Traversable;
-
 /**
  * Creates a map from an SS_List by defining a key column and a value column.
  *
@@ -16,23 +24,19 @@ use Traversable;
  */
 class Map implements ArrayAccess, Countable, IteratorAggregate
 {
-
     protected $list, $keyField, $valueField;
-
     /**
      * @see Map::unshift()
      *
      * @var array $firstItems
      */
     protected $firstItems = [];
-
     /**
      * @see Map::push()
      *
      * @var array $lastItems
      */
     protected $lastItems = [];
-
     /**
      * Construct a new map around an SS_list.
      *
@@ -42,15 +46,10 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
      */
     public function __construct(SS_List $list, $keyField = "ID", $valueField = "Title")
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\List\Map', Deprecation::SCOPE_CLASS);
-        });
-
         $this->list = $list;
         $this->keyField = $keyField;
         $this->valueField = $valueField;
     }
-
     /**
      * Set the key field for this map.
      *
@@ -60,7 +59,6 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     {
         $this->keyField = $keyField;
     }
-
     /**
      * Set the value field for this map.
      *
@@ -70,7 +68,6 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     {
         $this->valueField = $valueField;
     }
-
     /**
      * Return an array equivalent to this map.
      *
@@ -79,14 +76,11 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     public function toArray()
     {
         $array = [];
-
         foreach ($this as $k => $v) {
             $array[$k] = $v;
         }
-
         return $array;
     }
-
     /**
      * Return all the keys of this map.
      *
@@ -96,7 +90,6 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     {
         return array_keys($this->toArray() ?? []);
     }
-
     /**
      * Return all the values of this map.
      *
@@ -106,7 +99,6 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     {
         return array_values($this->toArray() ?? []);
     }
-
     /**
      * Unshift an item onto the start of the map.
      *
@@ -119,17 +111,12 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     public function unshift($key, $value)
     {
         $oldItems = $this->firstItems;
-        $this->firstItems = [
-            $key => $value
-        ];
-
+        $this->firstItems = [$key => $value];
         if ($oldItems) {
             $this->firstItems = $this->firstItems + $oldItems;
         }
-
         return $this;
     }
-
     /**
      * Pushes an item onto the end of the map.
      *
@@ -140,54 +127,38 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
     public function push($key, $value)
     {
         $oldItems = $this->lastItems;
-
-        $this->lastItems = [
-            $key => $value
-        ];
-
+        $this->lastItems = [$key => $value];
         if ($oldItems) {
             $this->lastItems = $this->lastItems + $oldItems;
         }
-
         return $this;
     }
-
-    public function offsetExists(mixed $key): bool
+    public function offsetExists(mixed $key) : bool
     {
         if (isset($this->firstItems[$key])) {
             return true;
         }
-
         if (isset($this->lastItems[$key])) {
             return true;
         }
-
         $record = $this->list->find($this->keyField, $key);
-
         return $record != null;
     }
-
-    public function offsetGet(mixed $key): mixed
+    public function offsetGet(mixed $key) : mixed
     {
         if (isset($this->firstItems[$key])) {
             return $this->firstItems[$key];
         }
-
         if (isset($this->lastItems[$key])) {
             return $this->lastItems[$key];
         }
-
         $record = $this->list->find($this->keyField, $key);
-
         if ($record) {
             $col = $this->valueField;
-
-            return $record->$col;
+            return $record->{$col};
         }
-
         return null;
     }
-
     /**
      * Sets a value in the map by a given key that has been set via
      * {@link Map::push()} or {@link Map::unshift()}
@@ -198,19 +169,16 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
      *
      * @throws BadMethodCallException
      */
-    public function offsetSet(mixed $key, mixed $value): void
+    public function offsetSet(mixed $key, mixed $value) : void
     {
         if (isset($this->firstItems[$key])) {
             $this->firstItems[$key] = $value;
         }
-
         if (isset($this->lastItems[$key])) {
             $this->lastItems[$key] = $value;
         }
-
         throw new BadMethodCallException('Map is read-only. Please use $map->push($key, $value) to append values');
     }
-
     /**
      * Removes a value in the map by a given key which has been added to the map
      * via {@link Map::push()} or {@link Map::unshift()}
@@ -221,51 +189,42 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
      *
      * @throws BadMethodCallException
      */
-    public function offsetUnset(mixed $key): void
+    public function offsetUnset(mixed $key) : void
     {
         if (isset($this->firstItems[$key])) {
             unset($this->firstItems[$key]);
             return;
         }
-
         if (isset($this->lastItems[$key])) {
             unset($this->lastItems[$key]);
             return;
         }
-
-        throw new BadMethodCallException(
-            'Map is read-only. Unset cannot be called on keys derived from the DataQuery.'
-        );
+        throw new BadMethodCallException('Map is read-only. Unset cannot be called on keys derived from the DataQuery.');
     }
-
     /**
      * Returns an Map_Iterator instance for iterating over the complete set
      * of items in the map.
      */
-    public function getIterator(): Traversable
+    public function getIterator() : Traversable
     {
         $keyField = $this->keyField;
         $valueField = $this->valueField;
-
         foreach ($this->firstItems as $k => $v) {
-            yield $k => $v;
+            (yield $k => $v);
         }
-
         foreach ($this->list as $record) {
-            if (isset($this->firstItems[$record->$keyField])) {
+            if (isset($this->firstItems[$record->{$keyField}])) {
                 continue;
             }
-            if (isset($this->lastItems[$record->$keyField])) {
+            if (isset($this->lastItems[$record->{$keyField}])) {
                 continue;
             }
-            yield $this->extractValue($record, $this->keyField) => $this->extractValue($record, $this->valueField);
+            (yield $this->extractValue($record, $this->keyField) => $this->extractValue($record, $this->valueField));
         }
-
         foreach ($this->lastItems as $k => $v) {
-            yield $k => $v;
+            (yield $k => $v);
         }
     }
-
     /**
      * Extracts a value from an item in the list, where the item is either an
      * object or array.
@@ -287,15 +246,12 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
             }
         }
     }
-
     /**
      * Returns the count of items in the list including the additional items set
      * through {@link Map::push()} and {@link Map::unshift}.
      */
-    public function count(): int
+    public function count() : int
     {
-        return $this->list->count() +
-            count($this->firstItems ?? []) +
-            count($this->lastItems ?? []);
+        return $this->list->count() + count($this->firstItems ?? []) + count($this->lastItems ?? []);
     }
 }

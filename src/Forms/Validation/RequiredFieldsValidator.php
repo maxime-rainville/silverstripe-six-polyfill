@@ -1,10 +1,18 @@
 <?php
 
-namespace SilverStripe\Forms;
+/**
+ * CMS 6 Polyfill for SilverStripe\Forms\RequiredFields
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Forms\Validation\Validation;
 
 use SilverStripe\ORM\ArrayLib;
 use SilverStripe\Dev\Deprecation;
-
 /**
  * Required Fields allows you to set which fields need to be present before
  * submitting the form. Submit an array of arguments or each field as a separate
@@ -15,38 +23,30 @@ use SilverStripe\Dev\Deprecation;
  *
  * @deprecated 5.4.0 Will be renamed to SilverStripe\Forms\Validation\RequiredFieldsValidator
  */
-class RequiredFields extends Validator
+class RequiredFieldsValidator extends Validator
 {
     /**
      * Whether to globally allow whitespace only as a valid value for a required field
      * Can be overridden on a per-instance basis
      */
     private static bool $allow_whitespace_only = true;
-
     /**
      * List of required fields
      *
      * @var array
      */
     protected $required;
-
     /**
      * Whether to allow whitespace only as a valid value for a required field for this instance
      * By default, this is set to null which will revert to the global default
      */
     private ?bool $allowWhitespaceOnly = null;
-
     /**
      * Pass each field to be validated as a separate argument to the constructor
      * of this object. (an array of elements are ok).
      */
     public function __construct()
     {
-        Deprecation::noticeWithNoReplacment(
-            '5.4.0',
-            'Will be renamed to SilverStripe\\Forms\\Validation\\RequiredFieldsValidator in a future major release',
-            Deprecation::SCOPE_CLASS
-        );
         $required = func_get_args();
         if (isset($required[0]) && is_array($required[0])) {
             $required = $required[0];
@@ -56,18 +56,15 @@ class RequiredFields extends Validator
         } else {
             $this->required = [];
         }
-
         parent::__construct();
     }
-
     /**
      * Get whether to allow whitespace only as a valid value for a required field
      */
-    public function getAllowWhitespaceOnly(): ?bool
+    public function getAllowWhitespaceOnly() : ?bool
     {
         return $this->allowWhitespaceOnly ?? static::config()->get('allow_whitespace_only');
     }
-
     /**
      * Set whether to allow whitespace only as a valid value for a required field
      */
@@ -75,7 +72,6 @@ class RequiredFields extends Validator
     {
         $this->allowWhitespaceOnly = $allow;
     }
-
     /**
      * Clears all the validation from this object.
      *
@@ -85,10 +81,8 @@ class RequiredFields extends Validator
     {
         parent::removeValidation();
         $this->required = [];
-
         return $this;
     }
-
     /**
      * Debug helper
      * @return string
@@ -98,16 +92,13 @@ class RequiredFields extends Validator
         if (!is_array($this->required)) {
             return false;
         }
-
         $result = "<ul>";
         foreach ($this->required as $name) {
-            $result .= "<li>$name</li>";
+            $result .= "<li>{$name}</li>";
         }
-
         $result .= "</ul>";
         return $result;
     }
-
     /**
      * Allows validation of fields via specification of a php function for
      * validation which is executed after the form is submitted.
@@ -120,30 +111,24 @@ class RequiredFields extends Validator
     {
         $valid = true;
         $fields = $this->form->Fields();
-
         foreach ($fields as $field) {
-            $valid = ($field->validate($this) && $valid);
+            $valid = $field->validate($this) && $valid;
         }
-
         if (!$this->required) {
             return $valid;
         }
-
         foreach ($this->required as $fieldName) {
             if (!$fieldName) {
                 continue;
             }
-
             if ($fieldName instanceof FormField) {
                 $formField = $fieldName;
                 $fieldName = $fieldName->getName();
             } else {
                 $formField = $fields->dataFieldByName($fieldName);
             }
-
             // submitted data for file upload fields come back as an array
             $value = $data[$fieldName] ?? null;
-
             if (is_array($value)) {
                 if ($formField instanceof FileField && isset($value['error']) && $value['error']) {
                     $error = true;
@@ -152,14 +137,14 @@ class RequiredFields extends Validator
                         $stringValue = (string) $value['value'];
                         $error = in_array($stringValue, ['0', '']);
                     } else {
-                        $error = (count($value ?? [])) ? false : true;
+                        $error = count($value ?? []) ? false : true;
                     }
                 }
             } else {
                 $stringValue = (string) $value;
                 if (!$this->getAllowWhitespaceOnly()) {
-                    $stringValue = preg_replace('/^\s+/u', '', $stringValue);
-                    $stringValue = preg_replace('/\s+$/u', '', (string) $stringValue);
+                    $stringValue = preg_replace('/^\\s+/u', '', $stringValue);
+                    $stringValue = preg_replace('/\\s+$/u', '', (string) $stringValue);
                 }
                 if (is_a($formField, HasOneRelationFieldInterface::class)) {
                     // test for blank string as well as '0' because older versions of silverstripe/admin FormBuilder
@@ -170,35 +155,17 @@ class RequiredFields extends Validator
                     $error = strlen((string) $stringValue) > 0 ? false : true;
                 }
             }
-
             if ($formField && $error) {
-                $errorMessage = _t(
-                    'SilverStripe\\Forms\\Form.FIELDISREQUIRED',
-                    '{name} is required',
-                    [
-                        'name' => strip_tags(
-                            '"' . ($formField->Title() ?: $fieldName) . '"'
-                        )
-                    ]
-                );
-
+                $errorMessage = _t('SilverStripe\\Forms\\Form.FIELDISREQUIRED', '{name} is required', ['name' => strip_tags('"' . ($formField->Title() ?: $fieldName) . '"')]);
                 if ($msg = $formField->getCustomValidationMessage()) {
                     $errorMessage = $msg;
                 }
-
-                $this->validationError(
-                    $fieldName,
-                    $errorMessage,
-                    "required"
-                );
-
+                $this->validationError($fieldName, $errorMessage, "required");
                 $valid = false;
             }
         }
-
         return $valid;
     }
-
     /**
      * Adds a single required field to required fields stack.
      *
@@ -209,10 +176,8 @@ class RequiredFields extends Validator
     public function addRequiredField($field)
     {
         $this->required[$field] = $field;
-
         return $this;
     }
-
     /**
      * Removes a required field
      *
@@ -223,10 +188,8 @@ class RequiredFields extends Validator
     public function removeRequiredField($field)
     {
         unset($this->required[$field]);
-
         return $this;
     }
-
     /**
      * Add {@link RequiredField} objects together
      *
@@ -235,13 +198,9 @@ class RequiredFields extends Validator
      */
     public function appendRequiredFields($requiredFields)
     {
-        $this->required = $this->required + ArrayLib::valuekey(
-            $requiredFields->getRequired()
-        );
-
+        $this->required = $this->required + ArrayLib::valuekey($requiredFields->getRequired());
         return $this;
     }
-
     /**
      * Returns true if the named field is "required".
      *
@@ -256,7 +215,6 @@ class RequiredFields extends Validator
     {
         return isset($this->required[$fieldName]);
     }
-
     /**
      * Return the required fields
      *
@@ -266,11 +224,10 @@ class RequiredFields extends Validator
     {
         return array_values($this->required ?? []);
     }
-
     /**
      * @return bool
      */
-    public function canBeCached(): bool
+    public function canBeCached() : bool
     {
         return count($this->getRequired() ?? []) === 0;
     }

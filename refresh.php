@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Refresh script for Silverstripe CMS 6 polyfill using hybrid AST approach
+ * Refresh script for Silverstripe CMS 6 polyfill using configuration-driven approach
  * 
  * This script:
  * 1. Reads the cms6-equivalence.yml mapping file
@@ -24,50 +24,30 @@ use PhpParser\Node;
 class PolyfillRefresher
 {
     private string $frameworkPath;
-    private array $equivalenceMap;
+    private array $classConfigs = [];
     private array $copiedFiles = [];
-    private array $classMapping;
-    private array $namespaceMapping;
 
     public function __construct()
     {
         $this->frameworkPath = 'silverstripe-temp/vendor/silverstripe/framework';
-        $this->loadEquivalenceMap();
-        $this->setupMappings();
+        $this->loadClassConfigs();
         $this->setupTempFramework();
     }
 
-    private function loadEquivalenceMap(): void
+    private function loadClassConfigs(): void
     {
         if (!file_exists('cms6-equivalence.yml')) {
             throw new Exception('cms6-equivalence.yml file not found');
         }
         
-        $this->equivalenceMap = Yaml::parseFile('cms6-equivalence.yml');
-        echo "Loaded " . count($this->equivalenceMap) . " class mappings\n";
-    }
-
-    private function setupMappings(): void
-    {
-        // Class name mappings for specific classes that change names
-        $this->classMapping = [
-            'RequiredFields' => 'RequiredFieldsValidator',
-            'ViewableData' => 'ModelData',
-            'ViewableData_Customised' => 'ModelDataCustomised',
-            'ViewableData_Debugger' => 'ModelDataDebugger',
-            'SSViewer_BasicIteratorSupport' => 'BasicIteratorSupport',
-            'PasswordValidator' => 'RulesPasswordValidator',
-        ];
+        $config = Yaml::parseFile('cms6-equivalence.yml');
         
-        // Build namespace mapping from the equivalence map
-        $this->namespaceMapping = [];
-        foreach ($this->equivalenceMap as $cms5Path => $cms6Path) {
-            $oldNamespace = $this->pathToNamespace($cms5Path);
-            $newNamespace = $this->pathToNamespace($cms6Path);
-            if ($oldNamespace !== $newNamespace) {
-                $this->namespaceMapping[$oldNamespace] = $newNamespace;
-            }
+        if (!isset($config['classes'])) {
+            throw new Exception('No classes configuration found in cms6-equivalence.yml');
         }
+        
+        $this->classConfigs = $config['classes'];
+        echo "Loaded " . count($this->classConfigs) . " class configurations\n";
     }
 
     private function setupTempFramework(): void
@@ -92,7 +72,7 @@ class PolyfillRefresher
 
     public function refresh(): void
     {
-        echo "🚀 Starting polyfill refresh with AST transformations...\n";
+        echo "🚀 Starting polyfill refresh with configuration-driven transformations...\n";
         
         // Clean existing src directory
         if (is_dir('src')) {
@@ -101,12 +81,15 @@ class PolyfillRefresher
         mkdir('src', 0755, true);
         
         // Copy and transform source files
-        foreach ($this->equivalenceMap as $cms5Path => $cms6Path) {
-            $this->copyAndTransformFile($cms5Path, $cms6Path);
+        foreach ($this->classConfigs as $sourceClass => $config) {
+            $this->copyAndTransformFile($sourceClass, $config);
         }
         
         // Run Rector for final cleanup
         $this->runRector();
+        
+        // Add polyfill headers to all generated files
+        $this->addPolyfillHeaders();
         
         // Clean up temporary framework
         $this->removeDirectorySafely('silverstripe-temp');
@@ -114,17 +97,17 @@ class PolyfillRefresher
         echo "✅ Polyfill refresh completed!\n";
     }
 
-    private function copyAndTransformFile(string $cms5Path, string $cms6Path): void
+    private function copyAndTransformFile(string $sourceClass, array $config): void
     {
-        $sourcePath = $this->frameworkPath . '/' . $cms5Path;
-        $targetPath = $cms6Path;
+        $sourcePath = $this->frameworkPath . '/' . $config['source_path'];
+        $targetPath = $config['target_path'];
         
         if (!file_exists($sourcePath)) {
             echo "⚠️  Source file not found: {$sourcePath}\n";
             return;
         }
         
-        echo "📄 Processing: {$cms5Path} -> {$cms6Path}\n";
+        echo "📄 Processing: {$config['source_path']} -> {$config['target_path']}\n";
         
         // Create target directory if it doesn't exist
         $targetDir = dirname($targetPath);
@@ -134,14 +117,14 @@ class PolyfillRefresher
         
         // Read and transform the source file
         $sourceContent = file_get_contents($sourcePath);
-        $transformedContent = $this->transformPhpFile($sourceContent, $cms5Path, $cms6Path);
+        $transformedContent = $this->transformPhpFile($sourceContent, $sourceClass, $config);
         
         // Write transformed content
         file_put_contents($targetPath, $transformedContent);
         $this->copiedFiles[] = $targetPath;
     }
 
-    private function transformPhpFile(string $content, string $cms5Path, string $cms6Path): string
+    private function transformPhpFile(string $content, string $sourceClass, array $config): string
     {
         $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
         $prettyPrinter = new Standard();
@@ -150,7 +133,7 @@ class PolyfillRefresher
             $ast = $parser->parse($content);
             
             // Create node visitor for transformations
-            $visitor = new PolyfillTransformVisitor($cms5Path, $cms6Path, $this->classMapping, $this->namespaceMapping);
+            $visitor = new ConfigurablePolyfillTransformVisitor($sourceClass, $config);
             
             $traverser = new NodeTraverser();
             $traverser->addVisitor($visitor);
@@ -161,25 +144,43 @@ class PolyfillRefresher
             // Generate transformed code
             $transformedCode = $prettyPrinter->prettyPrintFile($ast);
             
-            // Add polyfill header
-            return $this->addPolyfillHeader($transformedCode, $cms5Path, $cms6Path);
+            return $transformedCode;
             
         } catch (Exception $e) {
-            echo "⚠️  Failed to parse {$cms5Path}: " . $e->getMessage() . "\n";
+            echo "⚠️  Failed to parse {$sourceClass}: " . $e->getMessage() . "\n";
             return $content; // Return original content if parsing fails
         }
     }
 
-    private function addPolyfillHeader(string $content, string $cms5Path, string $cms6Path): string
+    private function addPolyfillHeaders(): void
     {
-        $originalClass = $this->pathToNamespace($cms5Path) . '\\' . $this->extractClassName($cms5Path);
-        $polyfillClass = $this->pathToNamespace($cms6Path) . '\\' . $this->extractClassName($cms6Path);
+        echo "📝 Adding polyfill headers to generated files...\n";
         
-        $header = "<?php\n\n/**\n * CMS 6 Polyfill for {$originalClass}\n * \n * This class provides forward compatibility by making the CMS 6 namespace\n * available in CMS 5, allowing you to migrate your code early.\n * \n * @package silverstripe-six-polyfill\n */\n\n";
+        foreach ($this->classConfigs as $sourceClass => $config) {
+            $targetPath = $config['target_path'];
+            
+            if (file_exists($targetPath)) {
+                $this->addPolyfillHeaderToFile($targetPath, $sourceClass, $config);
+            }
+        }
+    }
+
+    private function addPolyfillHeaderToFile(string $filePath, string $sourceClass, array $config): void
+    {
+        $content = file_get_contents($filePath);
+        if ($content === false) {
+            return;
+        }
+
+        $targetClass = $config['target_namespace'] . '\\' . $config['target_class'];
+        
+        $header = "<?php\n\n/**\n * CMS 6 Polyfill for {$sourceClass}\n * \n * This class provides forward compatibility by making the CMS 6 namespace\n * available in CMS 5, allowing you to migrate your code early.\n * \n * @package silverstripe-six-polyfill\n */\n\n";
         
         // Remove existing <?php tag and add our header
         $content = preg_replace('/^<\?php\s*\n?/s', '', $content);
-        return $header . $content;
+        $newContent = $header . $content;
+        
+        file_put_contents($filePath, $newContent);
     }
 
     private function runRector(): void
@@ -194,18 +195,6 @@ class PolyfillRefresher
         } else {
             echo "⚠️  Rector had some issues but continuing...\n";
         }
-    }
-
-    private function pathToNamespace(string $path): string
-    {
-        $pathParts = explode('/', dirname($path));
-        array_shift($pathParts); // Remove 'src'
-        return 'SilverStripe\\' . implode('\\', $pathParts);
-    }
-
-    private function extractClassName(string $path): string
-    {
-        return basename($path, '.php');
     }
 
     private function removeDirectory(string $dir): void
@@ -243,28 +232,53 @@ class PolyfillRefresher
 }
 
 /**
- * AST Visitor for transforming SilverStripe classes
+ * Configuration-driven AST Visitor for transforming SilverStripe classes
  */
-class PolyfillTransformVisitor extends NodeVisitorAbstract
+class ConfigurablePolyfillTransformVisitor extends NodeVisitorAbstract
 {
-    private string $cms5Path;
-    private string $cms6Path;
-    private array $classMapping;
-    private array $namespaceMapping;
+    private string $sourceClass;
+    private array $config;
+    private string $sourceNamespace;
+    private string $sourceClassName;
+    private array $nodesToRemove = [];
 
-    public function __construct(string $cms5Path, string $cms6Path, array $classMapping, array $namespaceMapping)
+    public function __construct(string $sourceClass, array $config)
     {
-        $this->cms5Path = $cms5Path;
-        $this->cms6Path = $cms6Path;
-        $this->classMapping = $classMapping;
-        $this->namespaceMapping = $namespaceMapping;
+        $this->sourceClass = $sourceClass;
+        $this->config = $config;
+        
+        // Parse source class name and namespace
+        $parts = explode('\\', $sourceClass);
+        $this->sourceClassName = array_pop($parts);
+        $this->sourceNamespace = implode('\\', $parts);
     }
 
     public function enterNode(Node $node)
     {
-        // Remove deprecation warnings about class renaming - check this first
-        if ($this->isDeprecationNoticeAboutRenaming($node)) {
-            return NodeTraverser::REMOVE_NODE;
+        // Remove deprecation notices in constructors
+        if ($node instanceof Node\Stmt\Expression) {
+            $expr = $node->expr;
+            
+            // Mark Deprecation::withSuppressedNotice calls about renaming for removal
+            if ($expr instanceof Node\Expr\StaticCall &&
+                $this->isDeprecationCall($expr, 'withSuppressedNotice') &&
+                $this->isAboutClassRenaming($expr)) {
+                $this->nodesToRemove[] = $node;
+            }
+            
+            // Mark direct Deprecation::notice calls about renaming for removal
+            if ($expr instanceof Node\Expr\StaticCall &&
+                $this->isDeprecationCall($expr, 'notice') &&
+                $this->isAboutClassRenaming($expr)) {
+                $this->nodesToRemove[] = $node;
+            }
+            
+            // Mark noticeWithNoReplacment calls about renaming for removal
+            if ($expr instanceof Node\Expr\StaticCall &&
+                $this->isDeprecationCall($expr, 'noticeWithNoReplacment') &&
+                $this->isAboutClassRenaming($expr)) {
+                $this->nodesToRemove[] = $node;
+            }
         }
         
         return null;
@@ -272,30 +286,53 @@ class PolyfillTransformVisitor extends NodeVisitorAbstract
     
     public function leaveNode(Node $node)
     {
+        // Remove marked deprecation nodes
+        if (in_array($node, $this->nodesToRemove, true)) {
+            return NodeTraverser::REMOVE_NODE;
+        }
+        
         // Transform namespace declarations
         if ($node instanceof Node\Stmt\Namespace_) {
-            if ($node->name) {
-                $currentNamespace = $node->name->toString();
-                foreach ($this->namespaceMapping as $old => $new) {
-                    if ($currentNamespace === $old) {
-                        $node->name = new Node\Name($new);
-                        break;
-                    }
-                }
+            if ($node->name && $node->name->toString() === $this->sourceNamespace) {
+                $targetNamespace = $this->config['target_namespace'];
+                $node->name = new Node\Name($targetNamespace);
+                return $node;
             }
         }
         
         // Transform class names
         if ($node instanceof Node\Stmt\Class_) {
-            if ($node->name) {
-                $currentClassName = $node->name->toString();
-                if (isset($this->classMapping[$currentClassName])) {
-                    $node->name = new Node\Identifier($this->classMapping[$currentClassName]);
+            if ($node->name && $node->name->toString() === $this->sourceClassName) {
+                $targetClassName = $this->config['target_class'];
+                if ($targetClassName !== $this->sourceClassName) {
+                    $node->name = new Node\Identifier($targetClassName);
+                    return $node;
                 }
             }
         }
         
         return null;
+    }
+    
+    private function isAboutClassRenaming(Node\Expr\StaticCall $call): bool
+    {
+        // Check for withSuppressedNotice with closure containing renaming notice
+        if ($this->isDeprecationCall($call, 'withSuppressedNotice')) {
+            if (isset($call->args[0]) && $call->args[0]->value instanceof Node\Expr\Closure) {
+                $closure = $call->args[0]->value;
+                foreach ($closure->stmts as $stmt) {
+                    if ($stmt instanceof Node\Stmt\Expression &&
+                        $stmt->expr instanceof Node\Expr\StaticCall &&
+                        $this->isDeprecationCall($stmt->expr, 'notice') &&
+                        $this->hasRenamingMessage($stmt->expr)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // Check direct calls
+        return $this->hasRenamingMessage($call);
     }
 
     private function isDeprecationNoticeAboutRenaming(Node $node): bool
@@ -317,21 +354,69 @@ class PolyfillTransformVisitor extends NodeVisitorAbstract
                         }
                     }
                 }
+                
+                // Also check if the target namespace is mentioned in any string arguments
+                foreach ($expr->args as $arg) {
+                    if ($this->containsTargetNamespace($arg)) {
+                        return true;
+                    }
+                }
             }
             
             // Handle direct Deprecation::notice calls  
             if ($expr instanceof Node\Expr\StaticCall &&
                 $this->isDeprecationCall($expr, 'notice')) {
-                return $this->hasRenamingMessage($expr);
+                return $this->hasRenamingMessage($expr) || $this->containsTargetNamespaceInCall($expr);
             }
             
             // Handle other deprecation method calls like noticeWithNoReplacement
             if ($expr instanceof Node\Expr\StaticCall &&
                 $this->isDeprecationMethodCall($expr)) {
-                return $this->hasRenamingMessage($expr);
+                return $this->hasRenamingMessage($expr) || $this->containsTargetNamespaceInCall($expr);
             }
         }
         
+        return false;
+    }
+    
+    private function containsTargetNamespace(Node\Arg $arg): bool
+    {
+        if ($arg->value instanceof Node\Expr\Closure) {
+            foreach ($arg->value->stmts as $stmt) {
+                if ($this->statementContainsTargetNamespace($stmt)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    private function statementContainsTargetNamespace(Node\Stmt $stmt): bool
+    {
+        if ($stmt instanceof Node\Stmt\Expression && 
+            $stmt->expr instanceof Node\Expr\StaticCall) {
+            return $this->containsTargetNamespaceInCall($stmt->expr);
+        }
+        return false;
+    }
+    
+    private function containsTargetNamespaceInCall(Node\Expr\StaticCall $call): bool
+    {
+        $targetNamespace = $this->config['target_namespace'] ?? '';
+        $targetClass = $this->config['target_class'] ?? '';
+        
+        foreach ($call->args as $arg) {
+            if ($arg->value instanceof Node\Scalar\String_) {
+                $message = $arg->value->value;
+                // Check if the message contains our target namespace or class
+                if (str_contains($message, $targetNamespace) || 
+                    str_contains($message, $targetClass) ||
+                    str_contains($message, $this->sourceNamespace) ||
+                    str_contains($message, $this->sourceClassName)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 

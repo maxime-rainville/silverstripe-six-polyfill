@@ -1,12 +1,20 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\ListDecorator
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model\List;
 
 use SilverStripe\View\ViewableData;
 use LogicException;
 use SilverStripe\Dev\Deprecation;
 use Traversable;
-
 /**
  * A base class for decorators that wrap around a list to provide additional
  * functionality. It passes through list methods to the underlying list
@@ -26,29 +34,21 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
      * @var TList<T>
      */
     protected SS_List&Sortable&Filterable&Limitable $list;
-
     /**
      * @param TList<T> $list
      */
     public function __construct(SS_List&Sortable&Filterable&Limitable $list)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\List\ListDecorator', Deprecation::SCOPE_CLASS);
-        });
-
         $this->setList($list);
-
         parent::__construct();
     }
-
     /**
      * @return TList<T>
      */
-    public function getList(): SS_List&Sortable&Filterable&Limitable
+    public function getList() : SS_List&Sortable&Filterable&Limitable
     {
         return $this->list;
     }
-
     /**
      * Set the list this decorator wraps around.
      *
@@ -60,84 +60,70 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
      * @param TListA<TA> $list
      * @return static<TListA, TA>
      */
-    public function setList(SS_List&Sortable&Filterable&Limitable $list): ListDecorator
+    public function setList(SS_List&Sortable&Filterable&Limitable $list) : ListDecorator
     {
         $this->list = $list;
         $this->failover = $this->list;
         return $this;
     }
-
-    public function offsetExists(mixed $key): bool
+    public function offsetExists(mixed $key) : bool
     {
         return $this->list->offsetExists($key);
     }
-
     /**
      * @return T
      */
-    public function offsetGet(mixed $key): mixed
+    public function offsetGet(mixed $key) : mixed
     {
         return $this->list->offsetGet($key);
     }
-
-    public function offsetSet(mixed $key, mixed $value): void
+    public function offsetSet(mixed $key, mixed $value) : void
     {
         $this->list->offsetSet($key, $value);
     }
-
-    public function offsetUnset(mixed $key): void
+    public function offsetUnset(mixed $key) : void
     {
         $this->list->offsetUnset($key);
     }
-
     public function toArray()
     {
         return $this->list->toArray();
     }
-
     public function toNestedArray()
     {
         return $this->list->toNestedArray();
     }
-
     public function add($item)
     {
         $this->list->add($item);
     }
-
     public function remove($itemObject)
     {
         $this->list->remove($itemObject);
     }
-
     /**
      * @return Traversable<T>
      */
-    public function getIterator(): Traversable
+    public function getIterator() : Traversable
     {
         return $this->list->getIterator();
     }
-
     public function exists()
     {
         return $this->list->exists();
     }
-
     public function first()
     {
         return $this->list->first();
     }
-
     public function last()
     {
         return $this->list->last();
     }
-
     public function getTotalItems()
     {
         return $this->list->count();
     }
-
     /**
      * @return int
      * @depreated 5.4.0 Use getTotalItems() instead.
@@ -147,37 +133,30 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
         Deprecation::notice('5.4.0', 'Use getTotalItems() instead.');
         return $this->getTotalItems();
     }
-
-    public function Count(): int
+    public function Count() : int
     {
         return $this->list->count();
     }
-
     public function forTemplate()
     {
         return $this->list->forTemplate();
     }
-
     public function map($index = 'ID', $titleField = 'Title')
     {
         return $this->list->map($index, $titleField);
     }
-
     public function find($key, $value)
     {
         return $this->list->find($key, $value);
     }
-
     public function column($value = 'ID')
     {
         return $this->list->column($value);
     }
-
     public function columnUnique($value = "ID")
     {
         return $this->list->columnUnique($value);
     }
-
     /**
      * @return TList<T>
      */
@@ -185,17 +164,14 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->each($callback);
     }
-
     public function canSortBy($by)
     {
         return $this->list->canSortBy($by);
     }
-
     public function reverse()
     {
         return $this->list->reverse();
     }
-
     /**
      * Sorts this list by one or more fields. You can either pass in a single
      * field name and direction, or a map of field names to sort directions.
@@ -211,12 +187,10 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->sort(...func_get_args());
     }
-
     public function canFilterBy($by)
     {
         return $this->list->canFilterBy($by);
     }
-
     /**
      * Filter the list to include items with these characteristics
      *
@@ -231,7 +205,6 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->filter(...func_get_args());
     }
-
     /**
      * Return a copy of this list which contains items matching any of these characteristics.
      *
@@ -259,7 +232,6 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->filterAny(...func_get_args());
     }
-
     /**
      * Note that, in the current implementation, the filtered list will be an ArrayList, but this may change in a
      * future implementation.
@@ -272,10 +244,7 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     public function filterByCallback($callback)
     {
         if (!is_callable($callback)) {
-            throw new LogicException(sprintf(
-                "SS_Filterable::filterByCallback() passed callback must be callable, '%s' given",
-                gettype($callback)
-            ));
+            throw new LogicException(sprintf("SS_Filterable::filterByCallback() passed callback must be callable, '%s' given", gettype($callback)));
         }
         $output = ArrayList::create();
         foreach ($this->list as $item) {
@@ -285,20 +254,17 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
         }
         return $output;
     }
-
     /**
      * @return TList<T>
      */
-    public function limit(?int $length, int $offset = 0): SS_List&Sortable&Filterable&Limitable
+    public function limit(?int $length, int $offset = 0) : SS_List&Sortable&Filterable&Limitable
     {
         return $this->list->limit($length, $offset);
     }
-
     public function byID($id)
     {
         return $this->list->byID($id);
     }
-
     /**
      * Filter this list to only contain the given Primary IDs
      *
@@ -310,7 +276,6 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->byIDs($ids);
     }
-
     /**
      * Exclude the list to not contain items with these characteristics
      *
@@ -325,7 +290,6 @@ abstract class ListDecorator extends ViewableData implements SS_List, Sortable, 
     {
         return $this->list->exclude(...func_get_args());
     }
-
     public function debug()
     {
         return $this->list->debug();

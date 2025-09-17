@@ -1,12 +1,20 @@
 <?php
 
-namespace SilverStripe\View;
+/**
+ * CMS 6 Polyfill for SilverStripe\View\ArrayData
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model;
 
 use SilverStripe\ORM\ArrayLib;
 use InvalidArgumentException;
 use SilverStripe\Dev\Deprecation;
 use stdClass;
-
 /**
  * Lets you wrap a bunch of array data, or object members, into a {@link ViewableData} object.
  *
@@ -21,23 +29,17 @@ use stdClass;
  */
 class ArrayData extends ViewableData
 {
-
     /**
      * @var array
      * @see ArrayData::_construct()
      */
     protected $array;
-
     /**
      * @param object|array $value An associative array, or an object with simple properties.
      * Converts object properties to keys of an associative array.
      */
     public function __construct($value = [])
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\ArrayData', Deprecation::SCOPE_CLASS);
-        });
-
         if (is_object($value)) {
             $this->array = get_object_vars($value);
         } elseif (is_array($value)) {
@@ -56,7 +58,6 @@ class ArrayData extends ViewableData
         }
         parent::__construct();
     }
-
     /**
      * Get the source array
      *
@@ -66,7 +67,6 @@ class ArrayData extends ViewableData
     {
         return $this->array;
     }
-
     /**
      * Gets a field from this object.
      *
@@ -93,18 +93,16 @@ class ArrayData extends ViewableData
         }
     }
     /**
-    * Add or set a field on this object.
-    *
-    * @param string $field
-    * @param mixed $value
-    * @return $this
-    */
-    public function setField($field, $value)
+     * Add or set a field on this object.
+     *
+     * @param string $field
+     * @return $this
+     */
+    public function setField($field, mixed $value)
     {
         $this->array[$field] = $value;
         return $this;
     }
-
     /**
      * Check array to see if field isset
      *
@@ -115,7 +113,6 @@ class ArrayData extends ViewableData
     {
         return isset($this->array[$field]);
     }
-
     /**
      * Converts an associative array to a simple object
      *
@@ -127,7 +124,7 @@ class ArrayData extends ViewableData
         $obj = new stdClass();
         if ($arr) {
             foreach ($arr as $name => $value) {
-                $obj->$name = $value;
+                $obj->{$name} = $value;
             }
         }
         return $obj;

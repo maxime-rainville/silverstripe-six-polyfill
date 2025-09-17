@@ -1,11 +1,19 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\ArrayLib
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Core;
 
 use Generator;
 use SilverStripe\Dev\Deprecation;
 use InvalidArgumentException;
-
 /**
  * Library of static methods for manipulating arrays.
  * @deprecated 5.4.0 Will be renamed to SilverStripe\Core\ArrayLib
@@ -14,11 +22,7 @@ class ArrayLib
 {
     public function __construct()
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib', Deprecation::SCOPE_CLASS);
-        });
     }
-
     /**
      * Inverses the first and second level keys of an associative
      * array, keying the result by the second level, and combines
@@ -58,25 +62,17 @@ class ArrayLib
      */
     public static function invert($arr)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::invert()');
-        });
-
         if (!$arr) {
             return [];
         }
-
         $result = [];
-
         foreach ($arr as $columnName => $column) {
             foreach ($column as $rowName => $cell) {
                 $result[$rowName][$columnName] = $cell;
             }
         }
-
         return $result;
     }
-
     /**
      * Return an array where the keys are all equal to the values.
      *
@@ -86,13 +82,8 @@ class ArrayLib
      */
     public static function valuekey($arr)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::valuekey()');
-        });
-
         return array_combine($arr ?? [], $arr ?? []);
     }
-
     /**
      * Flattens a multi-dimensional array to a one level array without preserving the keys
      *
@@ -102,13 +93,8 @@ class ArrayLib
      */
     public static function array_values_recursive($array)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::invearray_values_recursivert()');
-        });
-
         return ArrayLib::flatten($array, false);
     }
-
     /**
      * Filter an array by keys (useful for only allowing certain form-input to
      * be saved).
@@ -121,19 +107,13 @@ class ArrayLib
      */
     public static function filter_keys($arr, $keys)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::filter_keys()');
-        });
-
         foreach ($arr as $key => $v) {
             if (!in_array($key, $keys ?? [])) {
                 unset($arr[$key]);
             }
         }
-
         return $arr;
     }
-
     /**
      * Determines if an array is associative by checking for existing keys via
      * array_key_exists().
@@ -147,17 +127,9 @@ class ArrayLib
      */
     public static function is_associative($array)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::is_associative()');
-        });
-
-        $isAssociative = !empty($array)
-            && is_array($array)
-            && ($array !== array_values($array ?? []));
-
+        $isAssociative = !empty($array) && is_array($array) && $array !== array_values($array ?? []);
         return $isAssociative;
     }
-
     /**
      * Recursively searches an array $haystack for the value(s) $needle.
      *
@@ -172,14 +144,9 @@ class ArrayLib
      */
     public static function in_array_recursive(mixed $needle, $haystack, $strict = false)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::in_array_recursive()');
-        });
-
         if (!is_array($haystack)) {
             return false;
         }
-
         if (in_array($needle, $haystack ?? [], $strict ?? false)) {
             return true;
         } else {
@@ -189,10 +156,8 @@ class ArrayLib
                 }
             }
         }
-
         return false;
     }
-
     /**
      * Similar to array_map, but recurses when arrays are encountered.
      *
@@ -205,15 +170,9 @@ class ArrayLib
      */
     public static function array_map_recursive($f, $array)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::array_map_recursive()');
-        });
-
         $applyOrRecurse = fn($v) => is_array($v) ? ArrayLib::array_map_recursive($f, $v) : call_user_func($f, $v);
-
         return array_map($applyOrRecurse, $array ?? []);
     }
-
     /**
      * Recursively merges two or more arrays.
      *
@@ -229,32 +188,20 @@ class ArrayLib
      */
     public static function array_merge_recursive($array)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::array_merge_recursive()');
-        });
-
         $arrays = func_get_args();
         $merged = [];
-
         if (count($arrays ?? []) == 1) {
             return $array;
         }
-
         while ($arrays) {
             $array = array_shift($arrays);
-
             if (!is_array($array)) {
-                trigger_error(
-                    'SilverStripe\ORM\ArrayLib::array_merge_recursive() encountered a non array argument',
-                    E_USER_WARNING
-                );
+                trigger_error('SilverStripe\\ORM\\ArrayLib::array_merge_recursive() encountered a non array argument', E_USER_WARNING);
                 return [];
             }
-
             if (!$array) {
                 continue;
             }
-
             foreach ($array as $key => $value) {
                 if (is_array($value) && array_key_exists($key, $merged ?? []) && is_array($merged[$key])) {
                     $merged[$key] = ArrayLib::array_merge_recursive($merged[$key], $value);
@@ -263,10 +210,8 @@ class ArrayLib
                 }
             }
         }
-
         return $merged;
     }
-
     /**
      * Takes an multi dimension array and returns the flattened version.
      *
@@ -279,26 +224,17 @@ class ArrayLib
      */
     public static function flatten($array, $preserveKeys = true, &$out = [])
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::flatten()');
-        });
-
-        array_walk_recursive(
-            $array,
-            function ($value, $key) use (&$out, $preserveKeys) {
-                if (!is_scalar($value)) {
-                    // Do nothing
-                } elseif ($preserveKeys) {
-                    $out[$key] = $value;
-                } else {
-                    $out[] = $value;
-                }
+        array_walk_recursive($array, function ($value, $key) use(&$out, $preserveKeys) {
+            if (!is_scalar($value)) {
+                // Do nothing
+            } elseif ($preserveKeys) {
+                $out[$key] = $value;
+            } else {
+                $out[] = $value;
             }
-        );
-
+        });
         return $out;
     }
-
     /**
      * Iterate list, but allowing for modifications to the underlying list.
      * Items in $list will only be iterated exactly once for each key, and supports
@@ -311,10 +247,6 @@ class ArrayLib
      */
     public static function iterateVolatile(array &$list)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::iterateVolatile()');
-        });
-
         // Keyed by already-iterated items
         $iterated = [];
         // Get all items not yet iterated
@@ -325,34 +257,26 @@ class ArrayLib
                 if (array_key_exists($key, $list ?? [])) {
                     // Ensure we yield from the source list
                     $iterated[$key] = true;
-                    yield $key => $list[$key];
+                    (yield $key => $list[$key]);
                 }
             }
         }
     }
-
     /**
      * Similar to shuffle, but retains the existing association between the keys and the values.
      * Shuffles the array in place.
      * @deprecated 5.4.0 Will be renamed to SilverStripe\Core\ArrayLib::shuffleAssociative()
      */
-    public static function shuffleAssociative(array &$array): void
+    public static function shuffleAssociative(array &$array) : void
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\ArrayLib::shuffleAssociative()');
-        });
-
         $shuffledArray = [];
         $keys = array_keys($array);
         shuffle($keys);
-
         foreach ($keys as $key) {
             $shuffledArray[$key] = $array[$key];
         }
-
         $array = $shuffledArray;
     }
-
     /**
      * Insert a value into an array before another given value.
      * Does not preserve keys.
@@ -362,7 +286,7 @@ class ArrayLib
      * @param boolean $splatInsertArray If true, $insert must be an array.
      * Its values will be splatted into the source array.
      */
-    public static function insertBefore(array $array, mixed $insert, mixed $before, bool $strict = false, bool $splatInsertArray = false): array
+    public static function insertBefore(array $array, mixed $insert, mixed $before, bool $strict = false, bool $splatInsertArray = false) : array
     {
         if ($splatInsertArray && !is_array($insert)) {
             throw new InvalidArgumentException('$insert must be an array when $splatInsertArray is true. Got ' . gettype($insert));
@@ -374,7 +298,6 @@ class ArrayLib
         }
         return static::insertAtPosition($array, $insert, $pos, $splatInsertArray);
     }
-
     /**
      * Insert a value into an array after another given value.
      * Does not preserve keys.
@@ -384,7 +307,7 @@ class ArrayLib
      * @param boolean $splatInsertArray If true, $insert must be an array.
      * Its values will be splatted into the source array.
      */
-    public static function insertAfter(array $array, mixed $insert, mixed $after, bool $strict = false, bool $splatInsertArray = false): array
+    public static function insertAfter(array $array, mixed $insert, mixed $after, bool $strict = false, bool $splatInsertArray = false) : array
     {
         if ($splatInsertArray && !is_array($insert)) {
             throw new InvalidArgumentException('$insert must be an array when $splatInsertArray is true. Got ' . gettype($insert));
@@ -396,15 +319,13 @@ class ArrayLib
         }
         return static::insertAtPosition($array, $insert, $pos + 1, $splatInsertArray);
     }
-
-    private static function insertAtPosition(array $array, mixed $insert, int $pos, bool $splatInsertArray): array
+    private static function insertAtPosition(array $array, mixed $insert, int $pos, bool $splatInsertArray) : array
     {
         $result = array_slice($array, 0, $pos);
         $result = static::insertIntoArray($result, $insert, $splatInsertArray);
         return array_merge($result, array_slice($array, $pos));
     }
-
-    private static function insertIntoArray(array $array, mixed $insert, bool $splatInsertArray): array
+    private static function insertIntoArray(array $array, mixed $insert, bool $splatInsertArray) : array
     {
         if ($splatInsertArray) {
             $array = array_merge($array, $insert);

@@ -1,43 +1,161 @@
-# Mapping of CMS 5 classes to their CMS 6 namespace equivalents
-# Format: 'CMS5_Class_Path': 'CMS6_Class_Path'
+# Mapping of CMS 5 classes to their CMS 6 equivalents
+# Each entry contains the source file path, target file path, and namespace transformations
 
-# Forms Validation Classes
-'src/Forms/Validator.php': 'src/Forms/Validation/Validator.php'
-'src/Forms/CompositeValidator.php': 'src/Forms/Validation/CompositeValidator.php'
-'src/Forms/RequiredFields.php': 'src/Forms/Validation/RequiredFieldsValidator.php'
+classes:
+  # Forms Validation Classes
+  SilverStripe\Forms\Validator:
+    source_path: 'src/Forms/Validator.php'
+    target_path: 'src/Forms/Validation/Validator.php'
+    target_namespace: 'SilverStripe\Forms\Validation'
+    target_class: 'Validator'
 
-# ORM Validation Classes
-'src/ORM/ValidationException.php': 'src/Core/Validation/ValidationException.php'
-'src/ORM/ValidationResult.php': 'src/Core/Validation/ValidationResult.php'
+  SilverStripe\Forms\CompositeValidator:
+    source_path: 'src/Forms/CompositeValidator.php'
+    target_path: 'src/Forms/Validation/CompositeValidator.php'
+    target_namespace: 'SilverStripe\Forms\Validation'
+    target_class: 'CompositeValidator'
 
-# ORM Array and List Classes (Moving to Model\List)
-'src/ORM/ArrayLib.php': 'src/Core/ArrayLib.php'
-'src/ORM/ArrayList.php': 'src/Model/List/ArrayList.php'
-'src/ORM/GroupedList.php': 'src/Model/List/GroupedList.php'
-'src/ORM/ListDecorator.php': 'src/Model/List/ListDecorator.php'
-'src/ORM/Map.php': 'src/Model/List/Map.php'
-'src/ORM/PaginatedList.php': 'src/Model/List/PaginatedList.php'
+  SilverStripe\Forms\RequiredFields:
+    source_path: 'src/Forms/RequiredFields.php'
+    target_path: 'src/Forms/Validation/RequiredFieldsValidator.php'
+    target_namespace: 'SilverStripe\Forms\Validation'
+    target_class: 'RequiredFieldsValidator'
 
-# View Classes (Moving to Model)
-'src/View/ArrayData.php': 'src/Model/ArrayData.php'
-'src/View/ViewableData.php': 'src/Model/ModelData.php'
-'src/View/ViewableData_Customised.php': 'src/Model/ModelDataCustomised.php'
-'src/View/ViewableData_Debugger.php': 'src/Model/ModelDataDebugger.php'
+  # ORM Validation Classes
+  SilverStripe\ORM\ValidationException:
+    source_path: 'src/ORM/ValidationException.php'
+    target_path: 'src/Core/Validation/ValidationException.php'
+    target_namespace: 'SilverStripe\Core\Validation'
+    target_class: 'ValidationException'
 
-# Template Engine Classes
-'src/View/SSTemplateParseException.php': 'src/TemplateEngine/Exception/SSTemplateParseException.php'
-'src/View/SSTemplateParser.php': 'src/TemplateEngine/SSTemplateParser.php'
-'src/View/SSViewer_BasicIteratorSupport.php': 'src/Model/BasicIteratorSupport.php'
-'src/View/SSViewer_Scope.php': 'src/TemplateEngine/SSViewer_Scope.php'
+  SilverStripe\ORM\ValidationResult:
+    source_path: 'src/ORM/ValidationResult.php'
+    target_path: 'src/Core/Validation/ValidationResult.php'
+    target_namespace: 'SilverStripe\Core\Validation'
+    target_class: 'ValidationResult'
 
-# Security Classes
-'src/Security/PasswordValidator.php': 'src/Security/Validation/RulesPasswordValidator.php'
+  # ORM Array and List Classes (Moving to Core/Model)
+  SilverStripe\ORM\ArrayLib:
+    source_path: 'src/ORM/ArrayLib.php'
+    target_path: 'src/Core/ArrayLib.php'
+    target_namespace: 'SilverStripe\Core'
+    target_class: 'ArrayLib'
 
-# Additional ORM interfaces and traits that may be moved
-'src/ORM/SS_List.php': 'src/Model/List/SS_List.php'
-'src/ORM/Filterable.php': 'src/Model/List/Filterable.php'
-'src/ORM/Limitable.php': 'src/Model/List/Limitable.php'
-'src/ORM/Sortable.php': 'src/Model/List/Sortable.php'
+  SilverStripe\ORM\ArrayList:
+    source_path: 'src/ORM/ArrayList.php'
+    target_path: 'src/Model/List/ArrayList.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'ArrayList'
 
-# HTTP and Control classes that may have validation-related moves
-'src/Control/HTTPResponse_Exception.php': 'src/Core/Exception/HTTPResponse_Exception.php'
+  SilverStripe\ORM\GroupedList:
+    source_path: 'src/ORM/GroupedList.php'
+    target_path: 'src/Model/List/GroupedList.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'GroupedList'
+
+  SilverStripe\ORM\ListDecorator:
+    source_path: 'src/ORM/ListDecorator.php'
+    target_path: 'src/Model/List/ListDecorator.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'ListDecorator'
+
+  SilverStripe\ORM\Map:
+    source_path: 'src/ORM/Map.php'
+    target_path: 'src/Model/List/Map.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'Map'
+
+  SilverStripe\ORM\PaginatedList:
+    source_path: 'src/ORM/PaginatedList.php'
+    target_path: 'src/Model/List/PaginatedList.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'PaginatedList'
+
+  # View Classes (Moving to Model)
+  SilverStripe\View\ArrayData:
+    source_path: 'src/View/ArrayData.php'
+    target_path: 'src/Model/ArrayData.php'
+    target_namespace: 'SilverStripe\Model'
+    target_class: 'ArrayData'
+
+  SilverStripe\View\ViewableData:
+    source_path: 'src/View/ViewableData.php'
+    target_path: 'src/Model/ModelData.php'
+    target_namespace: 'SilverStripe\Model'
+    target_class: 'ModelData'
+
+  SilverStripe\View\ViewableData_Customised:
+    source_path: 'src/View/ViewableData_Customised.php'
+    target_path: 'src/Model/ModelDataCustomised.php'
+    target_namespace: 'SilverStripe\Model'
+    target_class: 'ModelDataCustomised'
+
+  SilverStripe\View\ViewableData_Debugger:
+    source_path: 'src/View/ViewableData_Debugger.php'
+    target_path: 'src/Model/ModelDataDebugger.php'
+    target_namespace: 'SilverStripe\Model'
+    target_class: 'ModelDataDebugger'
+
+  # Template Engine Classes
+  SilverStripe\View\SSTemplateParseException:
+    source_path: 'src/View/SSTemplateParseException.php'
+    target_path: 'src/TemplateEngine/Exception/SSTemplateParseException.php'
+    target_namespace: 'SilverStripe\TemplateEngine\Exception'
+    target_class: 'SSTemplateParseException'
+
+  SilverStripe\View\SSTemplateParser:
+    source_path: 'src/View/SSTemplateParser.php'
+    target_path: 'src/TemplateEngine/SSTemplateParser.php'
+    target_namespace: 'SilverStripe\TemplateEngine'
+    target_class: 'SSTemplateParser'
+
+  SilverStripe\View\SSViewer_BasicIteratorSupport:
+    source_path: 'src/View/SSViewer_BasicIteratorSupport.php'
+    target_path: 'src/Model/BasicIteratorSupport.php'
+    target_namespace: 'SilverStripe\Model'
+    target_class: 'BasicIteratorSupport'
+
+  SilverStripe\View\SSViewer_Scope:
+    source_path: 'src/View/SSViewer_Scope.php'
+    target_path: 'src/TemplateEngine/SSViewer_Scope.php'
+    target_namespace: 'SilverStripe\TemplateEngine'
+    target_class: 'SSViewer_Scope'
+
+  # Security Classes
+  SilverStripe\Security\PasswordValidator:
+    source_path: 'src/Security/PasswordValidator.php'
+    target_path: 'src/Security/Validation/RulesPasswordValidator.php'
+    target_namespace: 'SilverStripe\Security\Validation'
+    target_class: 'RulesPasswordValidator'
+
+  # Additional ORM interfaces and traits
+  SilverStripe\ORM\SS_List:
+    source_path: 'src/ORM/SS_List.php'
+    target_path: 'src/Model/List/SS_List.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'SS_List'
+
+  SilverStripe\ORM\Filterable:
+    source_path: 'src/ORM/Filterable.php'
+    target_path: 'src/Model/List/Filterable.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'Filterable'
+
+  SilverStripe\ORM\Limitable:
+    source_path: 'src/ORM/Limitable.php'
+    target_path: 'src/Model/List/Limitable.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'Limitable'
+
+  SilverStripe\ORM\Sortable:
+    source_path: 'src/ORM/Sortable.php'
+    target_path: 'src/Model/List/Sortable.php'
+    target_namespace: 'SilverStripe\Model\List'
+    target_class: 'Sortable'
+
+  # HTTP and Control classes
+  SilverStripe\Control\HTTPResponse_Exception:
+    source_path: 'src/Control/HTTPResponse_Exception.php'
+    target_path: 'src/Core/Exception/HTTPResponse_Exception.php'
+    target_namespace: 'SilverStripe\Core\Exception'
+    target_class: 'HTTPResponse_Exception'

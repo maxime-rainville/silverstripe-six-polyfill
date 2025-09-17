@@ -1,11 +1,19 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\ValidationResult
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Core\Validation;
 
 use InvalidArgumentException;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Dev\Deprecation;
-
 /**
  * A class that combined as a boolean result with an optional list of error messages.
  * This is used for returning validation results from validators
@@ -18,37 +26,30 @@ use SilverStripe\Dev\Deprecation;
 class ValidationResult
 {
     use Injectable;
-
     /**
      * Standard "error" type
      */
     const TYPE_ERROR = 'error';
-
     /**
      * Standard "good" message type
      */
     const TYPE_GOOD = 'good';
-
     /**
      * Non-error message type.
      */
     const TYPE_INFO = 'info';
-
     /**
      * Warning message type
      */
     const TYPE_WARNING = 'warning';
-
     /**
      * Message type is html
      */
     const CAST_HTML = 'html';
-
     /**
      * Message type is plain text
      */
     const CAST_TEXT = 'text';
-
     /**
      * Is the result valid or not.
      * Note that there can be non-error messages in the list.
@@ -56,21 +57,15 @@ class ValidationResult
      * @var bool
      */
     protected $isValid = true;
-
     /**
      * List of messages
      *
      * @var array
      */
     protected $messages = [];
-
     public function __construct()
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\Validation\ValidationResult', Deprecation::SCOPE_CLASS);
-        });
     }
-
     /**
      * Record an error against this validation result,
      *
@@ -86,24 +81,15 @@ class ValidationResult
     public function addError($message, $messageType = ValidationResult::TYPE_ERROR, $code = null, $cast = ValidationResult::CAST_TEXT)
     {
         if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $code as null is deprecated. Pass a blank string instead.', Deprecation::SCOPE_GLOBAL);
             $code = '';
         }
         if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.', Deprecation::SCOPE_GLOBAL);
             $cast = ValidationResult::CAST_TEXT;
         }
         return $this->addFieldError('', $message, $messageType, $code, $cast);
     }
-
     /**
      * Record an error against this validation result,
      *
@@ -117,33 +103,19 @@ class ValidationResult
      * Bool values will be treated as plain text flag.
      * @return $this
      */
-    public function addFieldError(
-        $fieldName,
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT
-    ) {
+    public function addFieldError($fieldName, $message, $messageType = ValidationResult::TYPE_ERROR, $code = null, $cast = ValidationResult::CAST_TEXT)
+    {
         if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $code as null is deprecated. Pass a blank string instead.', Deprecation::SCOPE_GLOBAL);
             $code = '';
         }
         if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.', Deprecation::SCOPE_GLOBAL);
             $cast = ValidationResult::CAST_TEXT;
         }
         $this->isValid = false;
         return $this->addFieldMessage($fieldName, $message, $messageType, $code, $cast);
     }
-
     /**
      * Add a message to this ValidationResult without necessarily marking it as an error
      *
@@ -159,24 +131,15 @@ class ValidationResult
     public function addMessage($message, $messageType = ValidationResult::TYPE_ERROR, $code = null, $cast = ValidationResult::CAST_TEXT)
     {
         if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $code as null is deprecated. Pass a blank string instead.', Deprecation::SCOPE_GLOBAL);
             $code = '';
         }
         if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.', Deprecation::SCOPE_GLOBAL);
             $cast = ValidationResult::CAST_TEXT;
         }
         return $this->addFieldMessage(null, $message, $messageType, $code, $cast);
     }
-
     /**
      * Add a message to this ValidationResult without necessarily marking it as an error
      *
@@ -190,51 +153,30 @@ class ValidationResult
      * Bool values will be treated as plain text flag.
      * @return $this
      */
-    public function addFieldMessage(
-        $fieldName,
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT
-    ) {
+    public function addFieldMessage($fieldName, $message, $messageType = ValidationResult::TYPE_ERROR, $code = null, $cast = ValidationResult::CAST_TEXT)
+    {
         if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $code as null is deprecated. Pass a blank string instead.', Deprecation::SCOPE_GLOBAL);
             $code = '';
         }
         if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
+            Deprecation::notice('5.4.0', 'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.', Deprecation::SCOPE_GLOBAL);
             $cast = ValidationResult::CAST_TEXT;
         }
         if ($code && is_numeric($code)) {
-            throw new InvalidArgumentException("Don't use a numeric code '$code'.  Use a string.");
+            throw new InvalidArgumentException("Don't use a numeric code '{$code}'.  Use a string.");
         }
         if (is_bool($cast)) {
             $cast = $cast ? ValidationResult::CAST_TEXT : ValidationResult::CAST_HTML;
         }
-        $metadata = [
-            'message' => $message,
-            'fieldName' => $fieldName,
-            'messageType' => $messageType,
-            'messageCast' => $cast,
-        ];
-
+        $metadata = ['message' => $message, 'fieldName' => $fieldName, 'messageType' => $messageType, 'messageCast' => $cast];
         if ($code) {
             $this->messages[$code] = $metadata;
         } else {
             $this->messages[] = $metadata;
         }
-
         return $this;
     }
-
     /**
      * Returns true if the result is valid.
      * @return boolean
@@ -243,7 +185,6 @@ class ValidationResult
     {
         return $this->isValid;
     }
-
     /**
      * Return the full error meta-data, suitable for combining with another ValidationResult.
      *
@@ -253,7 +194,6 @@ class ValidationResult
     {
         return $this->messages;
     }
-
     /**
      * Combine this Validation Result with the ValidationResult given in other.
      * It will be valid if both this and the other result are valid.
@@ -268,16 +208,11 @@ class ValidationResult
         $this->messages = array_merge($this->messages, $other->getMessages());
         return $this;
     }
-
-    public function __serialize(): array
+    public function __serialize() : array
     {
-        return [
-            'messages' => $this->messages,
-            'isValid' => $this->isValid()
-        ];
+        return ['messages' => $this->messages, 'isValid' => $this->isValid()];
     }
-
-    public function __unserialize(array $data): void
+    public function __unserialize(array $data) : void
     {
         $this->messages = $data['messages'];
         $this->isValid = $data['isValid'];

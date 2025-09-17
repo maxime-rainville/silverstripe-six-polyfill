@@ -9,39 +9,62 @@ use PhpParser\Node\Stmt\Namespace_;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Symfony\Component\Yaml\Yaml;
 
 /**
- * Change class namespace and name based on CMS 6 equivalence mapping
+ * Change class namespace and name based on CMS 6 equivalence mapping from YAML config
  */
 final class ChangeClassNamespaceRule extends AbstractRector
 {
-    private array $namespaceMapping = [];
-    private array $classMapping = [];
+    private array $classMappings = [];
+    private array $namespaceMappings = [];
 
     public function __construct()
     {
-        // Define the namespace and class mappings for CMS 6
-        $this->namespaceMapping = [
-            'SilverStripe\\Forms' => 'SilverStripe\\Forms\\Validation',
-            'SilverStripe\\ORM' => 'SilverStripe\\Model\\List',
-            'SilverStripe\\View' => 'SilverStripe\\Model',
-            'SilverStripe\\Security' => 'SilverStripe\\Security\\Validation',
-        ];
+        $this->loadMappingsFromConfig();
+    }
 
-        $this->classMapping = [
-            'RequiredFields' => 'RequiredFieldsValidator',
-            'ViewableData' => 'ModelData',
-            'ViewableData_Customised' => 'ModelDataCustomised',
-            'ViewableData_Debugger' => 'ModelDataDebugger',
-            'SSViewer_BasicIteratorSupport' => 'BasicIteratorSupport',
-            'PasswordValidator' => 'RulesPasswordValidator',
-        ];
+    private function loadMappingsFromConfig(): void
+    {
+        $configPath = __DIR__ . '/../../cms6-equivalence.yml';
+        
+        if (!file_exists($configPath)) {
+            return; // Silently skip if config not found
+        }
+
+        try {
+            $config = Yaml::parseFile($configPath);
+            
+            if (!isset($config['classes'])) {
+                return;
+            }
+
+            foreach ($config['classes'] as $sourceClass => $targetConfig) {
+                // Extract source namespace and class name
+                $sourceParts = explode('\\', $sourceClass);
+                $sourceClassName = array_pop($sourceParts);
+                $sourceNamespace = implode('\\', $sourceParts);
+
+                $targetNamespace = $targetConfig['target_namespace'] ?? null;
+                $targetClassName = $targetConfig['target_class'] ?? $sourceClassName;
+
+                if ($targetNamespace && $sourceNamespace !== $targetNamespace) {
+                    $this->namespaceMappings[$sourceNamespace] = $targetNamespace;
+                }
+
+                if ($sourceClassName !== $targetClassName) {
+                    $this->classMappings[$sourceClassName] = $targetClassName;
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently handle YAML parsing errors
+        }
     }
 
     public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition(
-            'Change class namespace and name for CMS 6 polyfill compatibility',
+            'Change class namespace and name for CMS 6 polyfill compatibility based on cms6-equivalence.yml',
             [
                 new CodeSample(
                     <<<'CODE_SAMPLE'
@@ -95,11 +118,20 @@ CODE_SAMPLE
         }
 
         $currentNamespace = $namespace->name->toString();
-        $newNamespace = $this->mapNamespace($currentNamespace);
-
-        if ($newNamespace !== $currentNamespace) {
-            $namespace->name = new Name($newNamespace);
+        
+        // Check for exact namespace match
+        if (isset($this->namespaceMappings[$currentNamespace])) {
+            $namespace->name = new Name($this->namespaceMappings[$currentNamespace]);
             return $namespace;
+        }
+
+        // Check for partial namespace matches (for nested namespaces)
+        foreach ($this->namespaceMappings as $oldNamespace => $newNamespace) {
+            if (str_starts_with($currentNamespace, $oldNamespace . '\\')) {
+                $suffix = substr($currentNamespace, strlen($oldNamespace));
+                $namespace->name = new Name($newNamespace . $suffix);
+                return $namespace;
+            }
         }
 
         return null;
@@ -112,45 +144,12 @@ CODE_SAMPLE
         }
 
         $currentClassName = $class->name->toString();
-        $newClassName = $this->classMapping[$currentClassName] ?? $currentClassName;
-
-        if ($newClassName !== $currentClassName) {
-            $class->name = new Node\Identifier($newClassName);
+        
+        if (isset($this->classMappings[$currentClassName])) {
+            $class->name = new Node\Identifier($this->classMappings[$currentClassName]);
             return $class;
         }
 
         return null;
-    }
-
-    private function mapNamespace(string $namespace): string
-    {
-        // Handle specific mappings
-        foreach ($this->namespaceMapping as $old => $new) {
-            if (str_starts_with($namespace, $old)) {
-                // Handle special cases for different target namespaces
-                if ($old === 'SilverStripe\\ORM') {
-                    // ArrayLib goes to Core, others go to Model\List
-                    if (str_contains($namespace, 'ArrayLib')) {
-                        return str_replace($old, 'SilverStripe\\Core', $namespace);
-                    }
-                    if (str_contains($namespace, 'Validation')) {
-                        return str_replace($old, 'SilverStripe\\Core\\Validation', $namespace);
-                    }
-                    return str_replace($old, 'SilverStripe\\Model\\List', $namespace);
-                }
-                
-                if ($old === 'SilverStripe\\View') {
-                    // Template classes go to TemplateEngine
-                    if (str_contains($namespace, 'Template')) {
-                        return str_replace($old, 'SilverStripe\\TemplateEngine', $namespace);
-                    }
-                    return str_replace($old, 'SilverStripe\\Model', $namespace);
-                }
-                
-                return str_replace($old, $new, $namespace);
-            }
-        }
-
-        return $namespace;
     }
 }

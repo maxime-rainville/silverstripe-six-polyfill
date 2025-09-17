@@ -1,13 +1,21 @@
 <?php
 
-namespace SilverStripe\Forms;
+/**
+ * CMS 6 Polyfill for SilverStripe\Forms\Validator
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Forms\Validation\Validation;
 
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Dev\Deprecation;
-
 /**
  * This validation class handles all form and custom form validation through the use of Required
  * fields. It relies on javascript for client-side validation, and marking fields after server-side
@@ -20,32 +28,22 @@ abstract class Validator
     use Injectable;
     use Configurable;
     use Extensible;
-
     public function __construct()
     {
-        Deprecation::noticeWithNoReplacment(
-            '5.4.0',
-            'Will be renamed to SilverStripe\\Forms\\Validation\\Validator in a future major release',
-            Deprecation::SCOPE_CLASS
-        );
         $this->resetResult();
     }
-
     /**
      * @var Form $form
      */
     protected $form;
-
     /**
      * @var ValidationResult $result
      */
     protected $result;
-
     /**
      * @var bool
      */
     private $enabled = true;
-
     /**
      * @param Form $form
      * @return $this
@@ -55,7 +53,6 @@ abstract class Validator
         $this->form = $form;
         return $this;
     }
-
     /**
      * Returns any errors there may be.
      *
@@ -69,7 +66,6 @@ abstract class Validator
         }
         return $this->result;
     }
-
     /**
      * Callback to register an error on a field (Called from implementations of
      * {@link FormField::validate}). The optional error message type parameter is loaded into the
@@ -85,16 +81,11 @@ abstract class Validator
      * Bool values will be treated as plain text flag.
      * @return $this
      */
-    public function validationError(
-        $fieldName,
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $cast = ValidationResult::CAST_TEXT
-    ) {
+    public function validationError($fieldName, $message, $messageType = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
+    {
         $this->result->addFieldError($fieldName, $message, $messageType, null, $cast);
         return $this;
     }
-
     /**
      * Returns all errors found by a previous call to {@link validate()}. The returned array has a
      * structure resembling:
@@ -117,7 +108,6 @@ abstract class Validator
         }
         return null;
     }
-
     /**
      * Get last validation result
      *
@@ -127,7 +117,6 @@ abstract class Validator
     {
         return $this->result;
     }
-
     /**
      * Returns whether the field in question is required. This will usually display '*' next to the
      * field. The base implementation always returns false.
@@ -140,24 +129,21 @@ abstract class Validator
     {
         return false;
     }
-
     /**
      * @param array $data
      *
      * @return mixed
      */
-    abstract public function php($data);
-
+    public abstract function php($data);
     /**
      * @param bool $enabled
      * @return $this
      */
     public function setEnabled($enabled)
     {
-        $this->enabled = (bool)$enabled;
+        $this->enabled = (bool) $enabled;
         return $this;
     }
-
     /**
      * @return bool
      */
@@ -165,7 +151,6 @@ abstract class Validator
     {
         return $this->enabled;
     }
-
     /**
      * @return $this
      */
@@ -175,7 +160,6 @@ abstract class Validator
         $this->resetResult();
         return $this;
     }
-
     /**
      * When Validators are set on the form, it can affect whether or not the form cannot be cached.
      *
@@ -183,11 +167,10 @@ abstract class Validator
      *
      * @return bool
      */
-    public function canBeCached(): bool
+    public function canBeCached() : bool
     {
         return false;
     }
-
     /**
      * Clear current result
      *

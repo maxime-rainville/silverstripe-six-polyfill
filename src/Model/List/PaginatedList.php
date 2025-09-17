@@ -1,6 +1,15 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\PaginatedList
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model\List;
 
 use SilverStripe\Control\HTTP;
 use SilverStripe\Control\HTTPRequest;
@@ -11,7 +20,6 @@ use Exception;
 use IteratorIterator;
 use SilverStripe\Dev\Deprecation;
 use Traversable;
-
 /**
  * A decorator that wraps around a data list in order to provide pagination.
  *
@@ -24,12 +32,10 @@ class PaginatedList extends ListDecorator
 {
     protected $request;
     protected $getVar = 'start';
-
     protected $pageLength = 10;
     protected $pageStart;
     protected $totalItems;
     protected $limitItems = true;
-
     /**
      * Constructs a new paginated list instance around a list.
      *
@@ -41,18 +47,12 @@ class PaginatedList extends ListDecorator
      */
     public function __construct(SS_List $list, $request = [])
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\List\PaginatedList', Deprecation::SCOPE_CLASS);
-        });
-
         if (!is_array($request) && !$request instanceof ArrayAccess) {
             throw new Exception('The request must be readable as an array.');
         }
-
         $this->setRequest($request);
         parent::__construct($list);
     }
-
     /**
      * Returns the GET var that is used to set the page start. This defaults
      * to "start".
@@ -66,7 +66,6 @@ class PaginatedList extends ListDecorator
     {
         return $this->getVar;
     }
-
     /**
      * Sets the GET var used to set the page start.
      *
@@ -78,7 +77,6 @@ class PaginatedList extends ListDecorator
         $this->getVar = $var;
         return $this;
     }
-
     /**
      * Returns the number of items displayed per page. This defaults to 10.
      *
@@ -88,7 +86,6 @@ class PaginatedList extends ListDecorator
     {
         return $this->pageLength;
     }
-
     /**
      * Set the number of items displayed per page. Set to zero to disable paging.
      *
@@ -97,10 +94,9 @@ class PaginatedList extends ListDecorator
      */
     public function setPageLength($length)
     {
-        $this->pageLength = (int)$length;
+        $this->pageLength = (int) $length;
         return $this;
     }
-
     /**
      * Sets the current page.
      *
@@ -109,10 +105,9 @@ class PaginatedList extends ListDecorator
      */
     public function setCurrentPage($page)
     {
-        $this->pageStart = ((int)$page - 1) * $this->getPageLength();
+        $this->pageStart = ((int) $page - 1) * $this->getPageLength();
         return $this;
     }
-
     /**
      * Returns the offset of the item the current page starts at.
      *
@@ -122,19 +117,14 @@ class PaginatedList extends ListDecorator
     {
         $request = $this->getRequest();
         if ($this->pageStart === null) {
-            if ($request
-                && isset($request[$this->getPaginationGetVar()])
-                && $request[$this->getPaginationGetVar()] > 0
-            ) {
-                $this->pageStart = (int)$request[$this->getPaginationGetVar()];
+            if ($request && isset($request[$this->getPaginationGetVar()]) && $request[$this->getPaginationGetVar()] > 0) {
+                $this->pageStart = (int) $request[$this->getPaginationGetVar()];
             } else {
                 $this->pageStart = 0;
             }
         }
-
         return $this->pageStart;
     }
-
     /**
      * Sets the offset of the item that current page starts at. This should be
      * a multiple of the page length.
@@ -144,10 +134,9 @@ class PaginatedList extends ListDecorator
      */
     public function setPageStart($start)
     {
-        $this->pageStart = (int)$start;
+        $this->pageStart = (int) $start;
         return $this;
     }
-
     /**
      * Returns the total number of items in the unpaginated list.
      *
@@ -158,10 +147,8 @@ class PaginatedList extends ListDecorator
         if ($this->totalItems === null) {
             $this->totalItems = count($this->list ?? []);
         }
-
         return $this->totalItems;
     }
-
     /**
      * Sets the total number of items in the list. This is useful when doing
      * custom pagination.
@@ -171,10 +158,9 @@ class PaginatedList extends ListDecorator
      */
     public function setTotalItems($items)
     {
-        $this->totalItems = (int)$items;
+        $this->totalItems = (int) $items;
         return $this;
     }
-
     /**
      * Sets the page length, page start and total items from a query object's
      * limit, offset and unlimited count. The query MUST have a limit clause.
@@ -191,7 +177,6 @@ class PaginatedList extends ListDecorator
         }
         return $this;
     }
-
     /**
      * Returns whether or not the underlying list is limited to the current
      * pagination range when iterating.
@@ -207,45 +192,37 @@ class PaginatedList extends ListDecorator
     {
         return $this->limitItems;
     }
-
     /**
      * @param bool $limit
      * @return $this
      */
     public function setLimitItems($limit)
     {
-        $this->limitItems = (bool)$limit;
+        $this->limitItems = (bool) $limit;
         return $this;
     }
-
-    public function getIterator(): Traversable
+    public function getIterator() : Traversable
     {
         $pageLength = $this->getPageLength();
         if ($this->limitItems && $pageLength) {
             $tmptList = clone $this->list;
-            return new IteratorIterator(
-                $tmptList->limit($pageLength, $this->getPageStart())
-            );
+            return new IteratorIterator($tmptList->limit($pageLength, $this->getPageStart()));
         } else {
             return new IteratorIterator($this->list);
         }
     }
-
     /**
      * @return array
      */
     public function toArray()
     {
         $result = [];
-
         // Use getIterator()
         foreach ($this as $record) {
             $result[] = $record;
         }
-
         return $result;
     }
-
     /**
      * Returns a set of links to all the pages in the list. This is useful for
      * basic pagination.
@@ -260,16 +237,13 @@ class PaginatedList extends ListDecorator
     public function Pages($max = null)
     {
         $result = new ArrayList();
-
         if ($max) {
-            $start = ($this->CurrentPage() - floor($max / 2)) - 1;
+            $start = $this->CurrentPage() - floor($max / 2) - 1;
             $end = $this->CurrentPage() + floor($max / 2);
-
             if ($start < 0) {
                 $start = 0;
                 $end = $max;
             }
-
             if ($end > $this->TotalPages()) {
                 $end = $this->TotalPages();
                 $start = max(0, $end - $max);
@@ -278,22 +252,11 @@ class PaginatedList extends ListDecorator
             $start = 0;
             $end = $this->TotalPages();
         }
-
         for ($i = $start; $i < $end; $i++) {
-            $result->push(new ArrayData([
-                'PageNum' => $i + 1,
-                'Link' => HTTP::setGetVar(
-                    $this->getPaginationGetVar(),
-                    $i * $this->getPageLength(),
-                    ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-                ),
-                'CurrentBool' => $this->CurrentPage() == ($i + 1)
-            ]));
+            $result->push(new ArrayData(['PageNum' => $i + 1, 'Link' => HTTP::setGetVar($this->getPaginationGetVar(), $i * $this->getPageLength(), $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null), 'CurrentBool' => $this->CurrentPage() == $i + 1]));
         }
-
         return $result;
     }
-
     /**
      * Returns a summarised pagination which limits the number of pages shown
      * around the current page for visually balanced.
@@ -334,12 +297,10 @@ class PaginatedList extends ListDecorator
         $result = new ArrayList();
         $current = $this->CurrentPage();
         $total = $this->TotalPages();
-
         // Make the number even for offset calculations.
         if ($context % 2) {
             $context--;
         }
-
         // If the first or last page is current, then show all context on one
         // side of it - otherwise show half on both sides.
         if ($current == 1 || $current == $total) {
@@ -347,67 +308,40 @@ class PaginatedList extends ListDecorator
         } else {
             $offset = floor($context / 2);
         }
-
         $left = max($current - $offset, 1);
         $right = min($current + $offset, $total);
         $range = range($current - $offset, $current + $offset);
-
         if ($left + $context > $total) {
             $left = $total - $context;
         }
-
         for ($i = 0; $i < $total; $i++) {
-            $link = HTTP::setGetVar(
-                $this->getPaginationGetVar(),
-                $i * $this->getPageLength(),
-                ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-            );
+            $link = HTTP::setGetVar($this->getPaginationGetVar(), $i * $this->getPageLength(), $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null);
             $num = $i + 1;
-
-            $emptyRange = $num != 1 && $num != $total && (
-                    $num == $left - 1 || $num == $right + 1
-                );
-
+            $emptyRange = $num != 1 && $num != $total && ($num == $left - 1 || $num == $right + 1);
             if ($emptyRange) {
-                $result->push(new ArrayData([
-                    'PageNum' => null,
-                    'Link' => null,
-                    'CurrentBool' => false
-                ]));
+                $result->push(new ArrayData(['PageNum' => null, 'Link' => null, 'CurrentBool' => false]));
             } elseif ($num == 1 || $num == $total || in_array($num, $range ?? [])) {
-                $result->push(new ArrayData([
-                    'PageNum' => $num,
-                    'Link' => $link,
-                    'CurrentBool' => $current == $num
-                ]));
+                $result->push(new ArrayData(['PageNum' => $num, 'Link' => $link, 'CurrentBool' => $current == $num]));
             }
         }
-
         return $result;
     }
-
     /**
      * @return int
      */
     public function CurrentPage()
     {
         $pageLength = $this->getPageLength();
-        return $pageLength
-            ? floor($this->getPageStart() / $pageLength) + 1
-            : 1;
+        return $pageLength ? floor($this->getPageStart() / $pageLength) + 1 : 1;
     }
-
     /**
      * @return int
      */
     public function TotalPages()
     {
         $pageLength = $this->getPageLength();
-        return $pageLength
-            ? ceil($this->getTotalItems() / $pageLength)
-            : min($this->getTotalItems(), 1);
+        return $pageLength ? ceil($this->getTotalItems() / $pageLength) : min($this->getTotalItems(), 1);
     }
-
     /**
      * @return bool
      */
@@ -415,7 +349,6 @@ class PaginatedList extends ListDecorator
     {
         return $this->TotalPages() > 1;
     }
-
     /**
      * @return bool
      */
@@ -423,7 +356,6 @@ class PaginatedList extends ListDecorator
     {
         return $this->CurrentPage() == 1;
     }
-
     /**
      * @return bool
      */
@@ -431,7 +363,6 @@ class PaginatedList extends ListDecorator
     {
         return !$this->FirstPage();
     }
-
     /**
      * @return bool
      */
@@ -439,7 +370,6 @@ class PaginatedList extends ListDecorator
     {
         return $this->CurrentPage() >= $this->TotalPages();
     }
-
     /**
      * @return bool
      */
@@ -447,7 +377,6 @@ class PaginatedList extends ListDecorator
     {
         return !$this->LastPage();
     }
-
     /**
      * Returns the number of the first item being displayed on the current
      * page. This is useful for things like "displaying 10-20".
@@ -458,7 +387,6 @@ class PaginatedList extends ListDecorator
     {
         return ($start = $this->getPageStart()) ? $start + 1 : 1;
     }
-
     /**
      * Returns the number of the last item being displayed on this page.
      *
@@ -475,7 +403,6 @@ class PaginatedList extends ListDecorator
             return min($pageLength, $this->getTotalItems());
         }
     }
-
     /**
      * Returns a link to the first page.
      *
@@ -483,13 +410,8 @@ class PaginatedList extends ListDecorator
      */
     public function FirstLink()
     {
-        return HTTP::setGetVar(
-            $this->getPaginationGetVar(),
-            0,
-            ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-        );
+        return HTTP::setGetVar($this->getPaginationGetVar(), 0, $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null);
     }
-
     /**
      * Returns a link to the last page.
      *
@@ -497,13 +419,8 @@ class PaginatedList extends ListDecorator
      */
     public function LastLink()
     {
-        return HTTP::setGetVar(
-            $this->getPaginationGetVar(),
-            ($this->TotalPages() - 1) * $this->getPageLength(),
-            ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-        );
+        return HTTP::setGetVar($this->getPaginationGetVar(), ($this->TotalPages() - 1) * $this->getPageLength(), $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null);
     }
-
     /**
      * Returns a link to the next page, if there is another page after the
      * current one.
@@ -513,14 +430,9 @@ class PaginatedList extends ListDecorator
     public function NextLink()
     {
         if ($this->NotLastPage()) {
-            return HTTP::setGetVar(
-                $this->getPaginationGetVar(),
-                $this->getPageStart() + $this->getPageLength(),
-                ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-            );
+            return HTTP::setGetVar($this->getPaginationGetVar(), $this->getPageStart() + $this->getPageLength(), $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null);
         }
     }
-
     /**
      * Returns a link to the previous page, if the first page is not currently
      * active.
@@ -530,14 +442,9 @@ class PaginatedList extends ListDecorator
     public function PrevLink()
     {
         if ($this->NotFirstPage()) {
-            return HTTP::setGetVar(
-                $this->getPaginationGetVar(),
-                $this->getPageStart() - $this->getPageLength(),
-                ($this->request instanceof HTTPRequest) ? $this->request->getURL(true) : null
-            );
+            return HTTP::setGetVar($this->getPaginationGetVar(), $this->getPageStart() - $this->getPageLength(), $this->request instanceof HTTPRequest ? $this->request->getURL(true) : null);
         }
     }
-
     /**
      * Returns the total number of items in the list
      * @depreated 5.4.0 Use getTotalItems() instead.
@@ -547,7 +454,6 @@ class PaginatedList extends ListDecorator
         Deprecation::notice('5.4.0', 'Use getTotalItems() instead.');
         return $this->getTotalItems();
     }
-
     /**
      * Set the request object for this list
      *
@@ -557,7 +463,6 @@ class PaginatedList extends ListDecorator
     {
         $this->request = $request;
     }
-
     /**
      * Get the request object for this list
      */

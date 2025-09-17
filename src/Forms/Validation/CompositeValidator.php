@@ -1,11 +1,19 @@
 <?php
 
-namespace SilverStripe\Forms;
+/**
+ * CMS 6 Polyfill for SilverStripe\Forms\CompositeValidator
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Forms\Validation\Validation;
 
 use InvalidArgumentException;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Dev\Deprecation;
-
 /**
  * CompositeValidator can contain between 0 and many different types of Validators. Each Validator is itself still
  * responsible for Validating its form and generating its ValidationResult.
@@ -39,7 +47,6 @@ class CompositeValidator extends Validator
      * @var array<Validator>
      */
     private $validators;
-
     /**
      * CompositeValidator constructor.
      *
@@ -47,15 +54,9 @@ class CompositeValidator extends Validator
      */
     public function __construct(array $validators = [])
     {
-        Deprecation::noticeWithNoReplacment(
-            '5.4.0',
-            'Will be renamed to SilverStripe\\Forms\\Validation\\CompositeValidator in a future major release',
-            Deprecation::SCOPE_CLASS
-        );
         $this->validators = array_values($validators ?? []);
         parent::__construct();
     }
-
     /**
      * Set the provided Form to the CompositeValidator and each Validator that has been added.
      *
@@ -67,21 +68,17 @@ class CompositeValidator extends Validator
         foreach ($this->getValidators() as $validator) {
             $validator->setForm($form);
         }
-
         return parent::setForm($form);
     }
-
     /**
      * @param Validator $validator
      * @return CompositeValidator
      */
-    public function addValidator(Validator $validator): CompositeValidator
+    public function addValidator(Validator $validator) : CompositeValidator
     {
         $this->validators[] = $validator;
-
         return $this;
     }
-
     /**
      * Returns any errors there may be. This method considers the enabled status of the CompositeValidator as a whole
      * (exiting early if the Composite is disabled), as well as the enabled status of each individual Validator.
@@ -91,20 +88,16 @@ class CompositeValidator extends Validator
     public function validate()
     {
         $this->resetResult();
-
         // This CompositeValidator has been disabled in full
         if (!$this->getEnabled()) {
             return $this->result;
         }
-
         foreach ($this->getValidators() as $validator) {
             // validate() will return a ValidationResult, and we will combine this with the result we already have
             $this->getResult()->combineAnd($validator->validate());
         }
-
         return $this->result;
     }
-
     /**
      * Note: The existing implementations for the php() method (@see RequiredFields) does not check whether the
      * Validator is enabled or not, and it also does not reset the validation result - so, neither does this.
@@ -119,15 +112,12 @@ class CompositeValidator extends Validator
             if ($validator->php($data)) {
                 continue;
             }
-
             // Validation result was invalid. Combine our ValidationResult messages
             $this->getResult()->combineAnd($validator->getResult());
         }
-
         // After collating results, return whether or not everything was valid
         return $this->getResult()->isValid();
     }
-
     /**
      * Returns whether the field in question is required. This will usually display '*' next to the
      * field.
@@ -143,18 +133,15 @@ class CompositeValidator extends Validator
                 return true;
             }
         }
-
         return false;
     }
-
     /**
      * @return array<Validator>
      */
-    public function getValidators(): array
+    public function getValidators() : array
     {
         return $this->validators;
     }
-
     /**
      * Return all Validators that match a certain class name. EG: RequiredFields::class
      *
@@ -165,68 +152,56 @@ class CompositeValidator extends Validator
      * @param class-string<T> $className
      * @return T[]
      */
-    public function getValidatorsByType(string $className): array
+    public function getValidatorsByType(string $className) : array
     {
         $validators = [];
-
         foreach ($this->getValidators() as $key => $validator) {
             if (!$validator instanceof $className) {
                 continue;
             }
-
             $validators[$key] = $validator;
         }
-
         return $validators;
     }
-
     /**
      * Remove all Validators that match a certain class name. EG: RequiredFields::class
      *
      * @param string $className
      * @return CompositeValidator
      */
-    public function removeValidatorsByType(string $className): CompositeValidator
+    public function removeValidatorsByType(string $className) : CompositeValidator
     {
         foreach ($this->getValidatorsByType($className) as $key => $validator) {
             $this->removeValidatorByKey($key);
         }
-
         return $this;
     }
-
     /**
      * Each Validator is aware of whether or not it can be cached. If even one Validator cannot be cached, then the
      * CompositeValidator as a whole also cannot be cached.
      *
      * @return bool
      */
-    public function canBeCached(): bool
+    public function canBeCached() : bool
     {
         foreach ($this->getValidators() as $validator) {
             if (!$validator->canBeCached()) {
                 return false;
             }
         }
-
         return true;
     }
-
     /**
      * @internal This method may be updated to public in the future. Let us know if you feel there's a use case for it
      * @param int $key
      * @return CompositeValidator
      */
-    protected function removeValidatorByKey(int $key): CompositeValidator
+    protected function removeValidatorByKey(int $key) : CompositeValidator
     {
         if (!array_key_exists($key, $this->validators ?? [])) {
-            throw new InvalidArgumentException(
-                sprintf('Key "%s" does not exist in $validators array', $key)
-            );
+            throw new InvalidArgumentException(sprintf('Key "%s" does not exist in $validators array', $key));
         }
-
         unset($this->validators[$key]);
-
         return $this;
     }
 }

@@ -1,6 +1,15 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\ArrayList
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model\List;
 
 use ArrayIterator;
 use InvalidArgumentException;
@@ -15,7 +24,6 @@ use SilverStripe\ORM\Filters\SearchFilterable;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\ViewableData;
 use Traversable;
-
 /**
  * A list object that wraps around an array of objects or arrays.
  *
@@ -40,7 +48,6 @@ use Traversable;
 class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, Limitable
 {
     use SearchFilterable;
-
     /**
      * Whether filter and exclude calls should be case sensitive by default or not.
      * This configuration property is here for backwards compatability.
@@ -48,34 +55,26 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
      * @deprecated 5.1.0 use SearchFilter.default_case_sensitive instead
      */
     private static bool $default_case_sensitive = true;
-
     /**
      * Holds the items in the list
      *
      * @var array<array-key, T>
      */
     protected $items = [];
-
     /**
      * @param array<array-key, T> $items - an initial array to fill this object with
      */
     public function __construct(array $items = [])
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\List\ArrayList', Deprecation::SCOPE_CLASS);
-        });
-
         $this->items = array_values($items ?? []);
         parent::__construct();
     }
-
     /**
      * Underlying type class for this list
      *
      * @var class-string<T>|null
      */
     protected $dataClass = null;
-
     /**
      * Return the class of items in this list, by looking at the first item inside it.
      *
@@ -97,7 +96,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         }
         return null;
     }
-
     /**
      * Hint this list to a specific type
      *
@@ -109,16 +107,14 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $this->dataClass = $class;
         return $this;
     }
-
     /**
      * Return the number of items in this list
      *
      */
-    public function count(): int
+    public function count() : int
     {
         return count($this->items ?? []);
     }
-
     /**
      * Returns true if this list has items
      *
@@ -128,24 +124,22 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return !empty($this->items);
     }
-
     /**
      * Returns an Iterator for this ArrayList.
      * This function allows you to use ArrayList in foreach loops
      *
      * @return Traversable<T>
      */
-    public function getIterator(): Traversable
+    public function getIterator() : Traversable
     {
         foreach ($this->items as $i => $item) {
             if (is_array($item)) {
-                yield new ArrayData($item);
+                (yield new ArrayData($item));
             } else {
-                yield $item;
+                (yield $item);
             }
         }
     }
-
     /**
      * Return an array of the actual items that this ArrayList contains.
      *
@@ -155,7 +149,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return $this->items;
     }
-
     /**
      * Walks the list using the specified callback
      *
@@ -169,7 +162,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         }
         return $this;
     }
-
     public function debug()
     {
         $val = "<h2>" . static::class . "</h2><ul>";
@@ -179,14 +171,12 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $val .= "</ul>";
         return $val;
     }
-
     /**
      * Return this list as an array and every object it as an sub array as well
      */
     public function toNestedArray()
     {
         $result = [];
-
         foreach ($this->items as $item) {
             if (is_object($item)) {
                 if (method_exists($item, 'toMap')) {
@@ -198,37 +188,29 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
                 $result[] = $item;
             }
         }
-
         return $result;
     }
-
-    public function limit(?int $length, int $offset = 0): static
+    public function limit(?int $length, int $offset = 0) : static
     {
         if ($length === null) {
             // If we unset the limit, we set the length to the size of the list. We still want the offset to be picked up
             $length = count($this->items);
         }
-
         if ($length < 0) {
-            throw new InvalidArgumentException("\$length can not be negative. $length was provided.");
+            throw new InvalidArgumentException("\$length can not be negative. {$length} was provided.");
         }
-
         if ($offset < 0) {
-            throw new InvalidArgumentException("\$offset can not be negative. $offset was provided.");
+            throw new InvalidArgumentException("\$offset can not be negative. {$offset} was provided.");
         }
-
         $list = clone $this;
-
         if ($length === 0) {
             // If we set the limit to 0, we return an empty list.
             $list->items = [];
         } else {
             $list->items = array_slice($this->items ?? [], $offset ?? 0, $length);
         }
-
         return $list;
     }
-
     /**
      * Add this $item into this list
      *
@@ -238,7 +220,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         $this->push($item);
     }
-
     /**
      * Remove this item from this list
      *
@@ -257,7 +238,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             $this->items = array_values($this->items ?? []);
         }
     }
-
     /**
      * Replaces an item in this list with another item.
      *
@@ -274,7 +254,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             }
         }
     }
-
     /**
      * Merges with another array or list by pushing all the items in it onto the
      * end of this list.
@@ -287,7 +266,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             $this->push($item);
         }
     }
-
     /**
      * Removes items from this list which have a duplicate value for a certain
      * field. This is especially useful when combining lists.
@@ -299,25 +277,19 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         $seen = [];
         $renumberKeys = false;
-
         foreach ($this->items as $key => $item) {
             $value = $this->extractValue($item, $field);
-
             if (array_key_exists($value, $seen ?? [])) {
                 $renumberKeys = true;
                 unset($this->items[$key]);
             }
-
             $seen[$value] = true;
         }
-
         if ($renumberKeys) {
             $this->items = array_values($this->items ?? []);
         }
-
         return $this;
     }
-
     /**
      * Pushes an item onto the end of this list.
      *
@@ -327,7 +299,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         $this->items[] = $item;
     }
-
     /**
      * Pops the last element off the end of the list and returns it.
      *
@@ -337,7 +308,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return array_pop($this->items);
     }
-
     /**
      * Add an item onto the beginning of the list.
      *
@@ -347,7 +317,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         array_unshift($this->items, $item);
     }
-
     /**
      * Shifts the item off the beginning of the list and returns it.
      *
@@ -357,25 +326,20 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return array_shift($this->items);
     }
-
     public function first()
     {
         if (empty($this->items)) {
             return null;
         }
-
         return reset($this->items);
     }
-
     public function last()
     {
         if (empty($this->items)) {
             return null;
         }
-
         return end($this->items);
     }
-
     /**
      * Returns a map of this list
      *
@@ -388,7 +352,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $list = clone $this;
         return new Map($list, $keyfield, $titlefield);
     }
-
     /**
      * Returns an array of a single field value for all items in the list.
      *
@@ -398,14 +361,11 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     public function column($colName = 'ID')
     {
         $result = [];
-
         foreach ($this->items as $item) {
             $result[] = $this->extractValue($item, $colName);
         }
-
         return $result;
     }
-
     /**
      * Returns a unique array of a single field value for all the items in the list
      *
@@ -416,7 +376,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return array_unique($this->column($colName) ?? []);
     }
-
     /**
      * You can always sort a ArrayList
      *
@@ -427,7 +386,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return true;
     }
-
     /**
      * Reverses an {@link ArrayList}
      *
@@ -437,10 +395,8 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         $list = clone $this;
         $list->items = array_reverse($this->items ?? []);
-
         return $list;
     }
-
     /**
      * Parses a specified column into a sort field and direction
      *
@@ -455,10 +411,9 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             $column = $direction;
             $direction = null;
         }
-
         // Parse column specification, considering possible ansi sql quoting
         // Note that table prefix is allowed, but discarded
-        if (preg_match('/^("?(?<table>[^"\s]+)"?\\.)?"?(?<column>[^"\s]+)"?(\s+(?<direction>((asc)|(desc))(ending)?))?$/i', $column ?? '', $match)) {
+        if (preg_match('/^("?(?<table>[^"\\s]+)"?\\.)?"?(?<column>[^"\\s]+)"?(\\s+(?<direction>((asc)|(desc))(ending)?))?$/i', $column ?? '', $match)) {
             $column = $match['column'];
             if (empty($direction) && !empty($match['direction'])) {
                 $direction = $match['direction'];
@@ -466,7 +421,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         } else {
             throw new InvalidArgumentException("Invalid sort() column");
         }
-
         // Parse sort direction specification
         if (empty($direction) || preg_match('/^asc(ending)?$/i', $direction ?? '')) {
             $direction = SORT_ASC;
@@ -475,10 +429,8 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         } else {
             throw new InvalidArgumentException("Invalid sort() direction");
         }
-
         return [$column, $direction];
     }
-
     /**
      * Sorts this list by one or more fields. You can either pass in a single
      * field name and direction, or a map of field names to sort directions.
@@ -496,20 +448,18 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     public function sort()
     {
         $args = func_get_args();
-
-        if (count($args ?? [])==0) {
+        if (count($args ?? []) == 0) {
             return $this;
         }
-        if (count($args ?? [])>2) {
+        if (count($args ?? []) > 2) {
             throw new InvalidArgumentException('This method takes zero, one or two arguments');
         }
         $columnsToSort = [];
-
         // One argument and it's a string
-        if (count($args ?? [])==1 && is_string($args[0])) {
+        if (count($args ?? []) == 1 && is_string($args[0])) {
             [$column, $direction] = $this->parseSortColumn($args[0]);
             $columnsToSort[$column] = $direction;
-        } elseif (count($args ?? [])==2) {
+        } elseif (count($args ?? []) == 2) {
             [$column, $direction] = $this->parseSortColumn($args[0], $args[1]);
             $columnsToSort[$column] = $direction;
         } elseif (is_array($args[0])) {
@@ -520,12 +470,10 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         } else {
             throw new InvalidArgumentException("Bad arguments passed to sort()");
         }
-
         // Store the original keys of the items as a sort fallback, so we can preserve the original order in the event
         // that array_multisort is unable to work out a sort order for them. This also prevents array_multisort trying
         // to inspect object properties which can result in errors with circular dependencies
         $originalKeys = array_keys($this->items ?? []);
-
         // This the main sorting algorithm that supports infinite sorting params
         $multisortArgs = [];
         $values = [];
@@ -542,24 +490,21 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             // PHP 5.3 requires below arguments to be reference when using array_multisort together
             // with call_user_func_array
             // First argument is the 'value' array to be sorted
-            $multisortArgs[] = &$values[$column];
+            $multisortArgs[] =& $values[$column];
             // First argument is the direction to be sorted,
-            $multisortArgs[] = &$sortDirection[$column];
+            $multisortArgs[] =& $sortDirection[$column];
             if ($firstRun) {
                 $multisortArgs[] = SORT_REGULAR;
             }
             $firstRun = false;
         }
-
-        $multisortArgs[] = &$originalKeys;
-
+        $multisortArgs[] =& $originalKeys;
         $list = clone $this;
         // As the last argument we pass in a reference to the items that all the sorting will be applied upon
-        $multisortArgs[] = &$list->items;
+        $multisortArgs[] =& $list->items;
         call_user_func_array('array_multisort', $multisortArgs ?? []);
         return $list;
     }
-
     /**
      * Shuffle the items in this array list
      *
@@ -568,10 +513,8 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     public function shuffle()
     {
         shuffle($this->items);
-
         return $this;
     }
-
     /**
      * Returns true if the given column can be used to filter the records.
      *
@@ -585,20 +528,15 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         if (empty($this->items)) {
             return false;
         }
-
         $firstRecord = $this->first();
-
         if (is_array($firstRecord)) {
             return array_key_exists($by, $firstRecord);
         }
-
         if ($firstRecord instanceof ViewableData) {
             return $firstRecord->hasField($by);
         }
-
         return property_exists($firstRecord, $by ?? '');
     }
-
     /**
      * Find the first item of this list where the given key = value
      *
@@ -610,7 +548,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     {
         return $this->filter($key, $value)->first();
     }
-
     /**
      * Filter the list to include items with these characteristics
      *
@@ -633,7 +570,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $filters = $this->normaliseFilterArgs(...func_get_args());
         return $this->filterOrExclude($filters);
     }
-
     /**
      * Return a copy of this list which contains items matching any of these characteristics.
      *
@@ -660,7 +596,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $filters = $this->normaliseFilterArgs(...func_get_args());
         return $this->filterOrExclude($filters, true, true);
     }
-
     /**
      * Exclude the list to not contain items with these characteristics
      *
@@ -683,7 +618,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         $filters = $this->normaliseFilterArgs(...func_get_args());
         return $this->filterOrExclude($filters, false);
     }
-
     /**
      * Return a copy of the list excluding any items that have any of these characteristics
      *
@@ -705,22 +639,20 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
      * @param string|array See {@link filter()}
      * @return static<T>
      */
-    public function excludeAny(): static
+    public function excludeAny() : static
     {
         $filters = $this->normaliseFilterArgs(...func_get_args());
         return $this->filterOrExclude($filters, false, true);
     }
-
     /**
      * Apply the appropriate filtering or excluding
      * @return static<T>
      */
-    protected function filterOrExclude(array $filters, bool $inclusive = true, bool $any = false): static
+    protected function filterOrExclude(array $filters, bool $inclusive = true, bool $any = false) : static
     {
         $itemsToKeep = [];
         $searchFilters = [];
         $hasNullFilter = false;
-
         foreach ($filters as $filterKey => $filterValue) {
             // Check if we have any null filter values for backwards compatability, since nulls are treated specially
             // in the ExactMatchFilter
@@ -734,7 +666,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
                 $hasNullFilter = true;
             }
             $searchFilter = $this->createSearchFilter($filterKey, $filterValue);
-
             // Apply default case sensitivity for backwards compatability
             if (!str_contains($filterKey, ':case') && !str_contains($filterKey, ':nocase')) {
                 $caseSensitive = Deprecation::withSuppressedNotice(fn() => static::config()->get('default_case_sensitive'));
@@ -744,57 +675,47 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
                     $searchFilter->setModifiers($searchFilter->getModifiers() + ['nocase']);
                 }
             }
-
             $searchFilters[$filterKey] = $searchFilter;
         }
-
         foreach ($this->items as $item) {
             $matches = [];
             foreach ($filters as $filterKey => $filterValue) {
                 $searchFilter = $searchFilters[$filterKey];
                 $extractedValue = $this->extractValue($item, $searchFilter->getFullName());
                 $hasMatch = null;
-
                 // If we need to do a legacy null comparison, try that first.
-                if (($searchFilter instanceof ExactMatchFilter) && ($hasNullFilter || $extractedValue === null)) {
+                if ($searchFilter instanceof ExactMatchFilter && ($hasNullFilter || $extractedValue === null)) {
                     $hasMatch = $this->performLegacyNullMatch($extractedValue, $filterValue);
                     if ($hasMatch !== null && in_array('not', $searchFilter->getModifiers())) {
                         $hasMatch = !$hasMatch;
                     }
                 }
-
                 // If the null comparison wasn't necessary or was incomplete, let searchfilters do the work.
                 if ($hasMatch === null) {
                     $hasMatch = $searchFilter->matches($extractedValue);
                 }
-
-
                 $matches[$hasMatch] = 1;
                 // If this is excludeAny or filterAny and we have a match, we can stop looking for matches.
                 if ($any && $hasMatch) {
                     break;
                 }
             }
-
             // filterAny or excludeAny allow any true value to be a match; filter or exclude require any false value
             // to be a mismatch.
             $isMatch = $any ? isset($matches[true]) : !isset($matches[false]);
-
             // If inclusive (filter) and we have a match, or exclusive (exclude) and there is NO match, keep the item.
-            if (($inclusive && $isMatch) || (!$inclusive && !$isMatch)) {
+            if ($inclusive && $isMatch || !$inclusive && !$isMatch) {
                 $itemsToKeep[] = $item;
             }
         }
-
         $list = clone $this;
         $list->items = $itemsToKeep;
         return $list;
     }
-
     /**
      * Required for backwards compatibility since ExactMatch handles null values differently than ArrayList used to.
      */
-    private function performLegacyNullMatch(mixed $objectValue, mixed $filterValues): ?bool
+    private function performLegacyNullMatch(mixed $objectValue, mixed $filterValues) : ?bool
     {
         if (!is_array($filterValues)) {
             $filterValues = [$filterValues];
@@ -811,7 +732,6 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         }
         return $objectValue === null ? false : null;
     }
-
     /**
      * Take the "standard" arguments that the filter/exclude functions take and return a single array with
      * 'colum' => 'value'
@@ -827,25 +747,20 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         if (count($args ?? []) > 2) {
             throw new InvalidArgumentException('filter takes one array or two arguments');
         }
-
         if (count($args ?? []) === 1 && !is_array($args[0])) {
             throw new InvalidArgumentException('filter takes one array or two arguments');
         }
-
         $keepUs = [];
         if (count($args ?? []) === 2) {
             $keepUs[$args[0]] = $args[1];
         }
-
         if (count($args ?? []) === 1 && is_array($args[0])) {
             foreach ($args[0] as $key => $val) {
                 $keepUs[$key] = $val;
             }
         }
-
         return $keepUs;
     }
-
     /**
      * Filter this list to only contain the given Primary IDs
      *
@@ -855,21 +770,18 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
      */
     public function byIDs($ids)
     {
-        $ids = array_map('intval', $ids ?? []); // sanitize
+        $ids = array_map('intval', $ids ?? []);
+        // sanitize
         return $this->filter('ID', $ids);
     }
-
     public function byID($id)
     {
         $firstElement = $this->filter("ID", $id)->first();
-
         if ($firstElement === false) {
             return null;
         }
-
         return $firstElement;
     }
-
     /**
      * @see Filterable::filterByCallback()
      *
@@ -880,52 +792,41 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
     public function filterByCallback($callback)
     {
         if (!is_callable($callback)) {
-            throw new LogicException(sprintf(
-                "SS_Filterable::filterByCallback() passed callback must be callable, '%s' given",
-                gettype($callback)
-            ));
+            throw new LogicException(sprintf("SS_Filterable::filterByCallback() passed callback must be callable, '%s' given", gettype($callback)));
         }
-
         $output = static::create();
-
         foreach ($this as $item) {
             if (call_user_func($callback, $item, $this)) {
                 $output->push($item);
             }
         }
-
         return $output;
     }
-
     protected function shouldExclude($item, $args)
     {
     }
-
-
     /**
      * Returns whether an item with $key exists
      */
-    public function offsetExists(mixed $offset): bool
+    public function offsetExists(mixed $offset) : bool
     {
         return array_key_exists($offset, $this->items ?? []);
     }
-
     /**
      * Returns item stored in list with index $key
      * @return T|null
      */
-    public function offsetGet(mixed $offset): mixed
+    public function offsetGet(mixed $offset) : mixed
     {
         if ($this->offsetExists($offset)) {
             return $this->items[$offset];
         }
         return null;
     }
-
     /**
      * Set an item with the key in $key
      */
-    public function offsetSet(mixed $offset, mixed $value): void
+    public function offsetSet(mixed $offset, mixed $value) : void
     {
         if ($offset === null) {
             $this->items[] = $value;
@@ -933,15 +834,13 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             $this->items[$offset] = $value;
         }
     }
-
     /**
      * Unset an item with the key in $key
      */
-    public function offsetUnset(mixed $offset): void
+    public function offsetUnset(mixed $offset) : void
     {
         unset($this->items[$offset]);
     }
-
     /**
      * Extracts a value from an item in the list, where the item is either an
      * object or array.
@@ -958,11 +857,9 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
             }
             return $item->{$key};
         }
-
         if (array_key_exists($key, $item ?? [])) {
             return $item[$key];
         }
-
         return null;
     }
 }

@@ -1,12 +1,20 @@
 <?php
 
-namespace SilverStripe\ORM;
+/**
+ * CMS 6 Polyfill for SilverStripe\ORM\ValidationException
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Core\Validation;
 
 use Exception;
 use InvalidArgumentException;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Dev\Deprecation;
-
 /**
  * Exception thrown by {@link DataObject}::write if validation fails. By throwing an
  * exception rather than a user error, the exception can be caught in unit tests and as such
@@ -17,14 +25,12 @@ use SilverStripe\Dev\Deprecation;
 class ValidationException extends Exception
 {
     use Injectable;
-
     /**
      * The contained ValidationResult related to this error
      *
      * @var ValidationResult
      */
     protected $result;
-
     /**
      * Construct a new ValidationException with an optional ValidationResult object
      *
@@ -34,21 +40,15 @@ class ValidationException extends Exception
      */
     public function __construct($result = null, $code = 0)
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Core\Validation\ValidationException', Deprecation::SCOPE_CLASS);
-        });
-
         // Catch legacy behaviour where second argument was not code
         if ($code && !is_numeric($code)) {
             throw new InvalidArgumentException("Code must be numeric");
         }
-
         // Set default message and result
         $exceptionMessage = _t("SilverStripe\\ORM\\ValidationException.DEFAULT_ERROR", "Validation error");
         if (!$result) {
             $result = $exceptionMessage;
         }
-
         // Check result type
         if ($result instanceof ValidationResult) {
             $this->result = $result;
@@ -61,14 +61,10 @@ class ValidationException extends Exception
             $this->result = ValidationResult::create()->addError($result);
             $exceptionMessage = $result;
         } else {
-            throw new InvalidArgumentException(
-                "ValidationExceptions must be passed a ValdiationResult, a string, or nothing at all"
-            );
+            throw new InvalidArgumentException("ValidationExceptions must be passed a ValdiationResult, a string, or nothing at all");
         }
-
         parent::__construct($exceptionMessage, $code);
     }
-
     /**
      * Retrieves the ValidationResult related to this error
      *

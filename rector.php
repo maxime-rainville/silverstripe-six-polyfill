@@ -3,6 +3,8 @@
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\Expression\RemoveDeadStmtRector;
 use Rector\DeadCode\Rector\StaticCall\RemoveParentCallWithoutParentRector;
+use SilverStripePolyfill\Rector\Rules\RemoveClassRenameDeprecationRule;
+use SilverStripePolyfill\Rector\Rules\ChangeClassNamespaceRule;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -10,9 +12,11 @@ return RectorConfig::configure()
     ])
     ->withPhpSets()
     ->withRules([
-        RemoveDeadStmtRector::class, // Clean up empty statements
+        RemoveClassRenameDeprecationRule::class,
+        ChangeClassNamespaceRule::class,
+        RemoveDeadStmtRector::class, // Clean up empty statements after removing deprecations
         RemoveParentCallWithoutParentRector::class, // Clean up unnecessary parent calls
+    ])
+    ->withAutoloadPaths([
+        __DIR__ . '/vendor/autoload.php',
     ]);
-
-// Note: Custom namespace and deprecation transformations will be handled
-// by the refresh script itself for better control

@@ -1,6 +1,15 @@
 <?php
 
-namespace SilverStripe\View;
+/**
+ * CMS 6 Polyfill for SilverStripe\View\ViewableData
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Model;
 
 use ArrayIterator;
 use Exception;
@@ -25,7 +34,6 @@ use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\View\SSViewer;
 use Traversable;
 use UnexpectedValueException;
-
 /**
  * A ViewableData object is any object that can be rendered into a template/view.
  *
@@ -35,14 +43,13 @@ use UnexpectedValueException;
  *
  * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\ModelData
  */
-class ViewableData implements IteratorAggregate, \Stringable
+class ModelData implements IteratorAggregate, \Stringable
 {
     use Extensible {
         defineMethods as extensibleDefineMethods;
     }
     use Injectable;
     use Configurable;
-
     /**
      * An array of objects to cast certain fields to. This is set up as an array in the format:
      *
@@ -55,10 +62,7 @@ class ViewableData implements IteratorAggregate, \Stringable
      * @var array
      * @config
      */
-    private static $casting = [
-        'CSSClasses' => 'Varchar'
-    ];
-
+    private static $casting = ['CSSClasses' => 'Varchar'];
     /**
      * The default object to cast scalar fields to if casting information is not specified, and casting to an object
      * is required.
@@ -67,54 +71,40 @@ class ViewableData implements IteratorAggregate, \Stringable
      * @config
      */
     private static $default_cast = 'Text';
-
     /**
      * @var array
      */
     private static $casting_cache = [];
-
     /**
      * Acts as a PHP 8.2+ compliant replacement for dynamic properties
      */
     private array $dynamicData = [];
-
     /**
      * Config of whether the model requires sudo mode to be active in order to be modified in admin
      * Sudo mode is a security feature that requires the user to re-enter their password before
      * making changes to the database.
      */
     private static bool $require_sudo_mode = false;
-
     // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * A failover object to attempt to get data from if it is not present on this object.
      *
      * @var ViewableData
      */
     protected $failover;
-
     /**
      * @var ViewableData
      */
     protected $customisedObject;
-
     /**
      * @var array
      */
     private $objCache = [];
-
     public function __construct()
     {
-        Deprecation::withSuppressedNotice(function () {
-            Deprecation::notice('5.4.0', 'Will be renamed to SilverStripe\Model\ModelData', Deprecation::SCOPE_CLASS);
-        });
     }
-
     // -----------------------------------------------------------------------------------------------------------------
-
     // FIELD GETTERS & SETTERS -----------------------------------------------------------------------------------------
-
     /**
      * Check if a field exists on this object or its failover.
      * Note that, unlike the core isset() implementation, this will return true if the property is defined
@@ -126,19 +116,17 @@ class ViewableData implements IteratorAggregate, \Stringable
     public function __isset($property)
     {
         // getField() isn't a field-specific getter and shouldn't be treated as such
-        if (strtolower($property ?? '') !== 'field' && $this->hasMethod("get$property")) {
+        if (strtolower($property ?? '') !== 'field' && $this->hasMethod("get{$property}")) {
             return true;
         }
         if ($this->hasField($property)) {
             return true;
         }
         if ($this->failover) {
-            return isset($this->failover->$property);
+            return isset($this->failover->{$property});
         }
-
         return false;
     }
-
     /**
      * Get the value of a property/field on this object. This will check if a method called get{$property} exists, then
      * check if a field is available using {@link ViewableData::getField()}, then fall back on a failover object.
@@ -149,20 +137,18 @@ class ViewableData implements IteratorAggregate, \Stringable
     public function __get($property)
     {
         // getField() isn't a field-specific getter and shouldn't be treated as such
-        $method = "get$property";
+        $method = "get{$property}";
         if (strtolower($property ?? '') !== 'field' && $this->hasMethod($method) && $this->isAccessibleMethod($method)) {
-            return $this->$method();
+            return $this->{$method}();
         }
         if ($this->hasField($property)) {
             return $this->getField($property);
         }
         if ($this->failover) {
-            return $this->failover->$property;
+            return $this->failover->{$property};
         }
-
         return null;
     }
-
     /**
      * Set a property/field on this object. This will check for the existence of a method called set{$property}, then
      * use the {@link ViewableData::setField()} method.
@@ -172,15 +158,13 @@ class ViewableData implements IteratorAggregate, \Stringable
     public function __set($property, mixed $value)
     {
         $this->objCacheClear();
-        $method = "set$property";
-
+        $method = "set{$property}";
         if ($this->hasMethod($method) && $this->isAccessibleMethod($method)) {
-            $this->$method($value);
+            $this->{$method}($value);
         } else {
             $this->setField($property, $value);
         }
     }
-
     /**
      * Set a failover object to attempt to get data from if it is not present on this object.
      *
@@ -192,11 +176,9 @@ class ViewableData implements IteratorAggregate, \Stringable
         if ($this->failover) {
             $this->removeMethodsFrom('failover');
         }
-
         $this->failover = $failover;
         $this->defineMethods();
     }
-
     /**
      * Get the current failover object if set
      *
@@ -206,7 +188,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return $this->failover;
     }
-
     /**
      * Check if a field exists on this object. This should be overloaded in child classes.
      *
@@ -217,7 +198,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return property_exists($this, $field) || $this->hasDynamicData($field);
     }
-
     /**
      * Get the value of a field on this object. This should be overloaded in child classes.
      *
@@ -227,11 +207,10 @@ class ViewableData implements IteratorAggregate, \Stringable
     public function getField($field)
     {
         if ($this->isAccessibleProperty($field)) {
-            return $this->$field;
+            return $this->{$field};
         }
         return $this->getDynamicData($field);
     }
-
     /**
      * Set a field on this object. This should be overloaded in child classes.
      *
@@ -245,40 +224,35 @@ class ViewableData implements IteratorAggregate, \Stringable
         // so the following logic essentially mimics this behaviour, though without the use
         // of now deprecated dynamic properties
         if ($this->isAccessibleProperty($field)) {
-            $this->$field = $value;
+            $this->{$field} = $value;
         }
         return $this->setDynamicData($field, $value);
     }
-
-    public function getDynamicData(string $field): mixed
+    public function getDynamicData(string $field) : mixed
     {
         return $this->hasDynamicData($field) ? $this->dynamicData[$field] : null;
     }
-
-    public function setDynamicData(string $field, mixed $value): static
+    public function setDynamicData(string $field, mixed $value) : static
     {
         $this->dynamicData[$field] = $value;
         return $this;
     }
-
-    public function hasDynamicData(string $field): bool
+    public function hasDynamicData(string $field) : bool
     {
         return array_key_exists($field, $this->dynamicData);
     }
-
     /**
      * Whether the model requires sudo mode to be active in order to be modified in admin
      */
-    public function getRequireSudoMode(): bool
+    public function getRequireSudoMode() : bool
     {
         return static::config()->get('require_sudo_mode');
     }
-
     /**
      * Returns true if a method exists for the current class which isn't private.
      * Also returns true for private methods if $this is ViewableData (not a subclass)
      */
-    private function isAccessibleMethod(string $method): bool
+    private function isAccessibleMethod(string $method) : bool
     {
         if (!method_exists($this, $method)) {
             // Methods added via extensions are accessible
@@ -292,12 +266,11 @@ class ViewableData implements IteratorAggregate, \Stringable
         $reflectionMethod = new ReflectionMethod($this, $method);
         return !$reflectionMethod->isPrivate();
     }
-
     /**
      * Returns true if a property exists for the current class which isn't private.
      * Also returns true for private properties if $this is ViewableData (not a subclass)
      */
-    private function isAccessibleProperty(string $property): bool
+    private function isAccessibleProperty(string $property) : bool
     {
         if (!property_exists($this, $property)) {
             return false;
@@ -308,9 +281,7 @@ class ViewableData implements IteratorAggregate, \Stringable
         $reflectionProperty = new ReflectionProperty($this, $property);
         return !$reflectionProperty->isPrivate();
     }
-
     // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * Add methods from the {@link ViewableData::$failover} object, as well as wrapping any methods prefixed with an
      * underscore into a {@link ViewableData::cachedCall()}.
@@ -324,16 +295,14 @@ class ViewableData implements IteratorAggregate, \Stringable
         }
         if ($this->failover) {
             $this->addMethodsFrom('failover');
-
             if (isset($_REQUEST['debugfailover'])) {
                 $class = static::class;
                 $failoverClass = $this->failover::class;
-                Debug::message("$class created with a failover class of {$failoverClass}");
+                Debug::message("{$class} created with a failover class of {$failoverClass}");
             }
         }
         $this->extensibleDefineMethods();
     }
-
     /**
      * Merge some arbitrary data in with this object. This method returns a {@link ViewableData_Customised} instance
      * with references to both this and the new custom data.
@@ -348,16 +317,11 @@ class ViewableData implements IteratorAggregate, \Stringable
         if (is_array($data) && (empty($data) || ArrayLib::is_associative($data))) {
             $data = new ArrayData($data);
         }
-
         if ($data instanceof ViewableData) {
             return new ViewableData_Customised($this, $data);
         }
-
-        throw new InvalidArgumentException(
-            'ViewableData->customise(): $data must be an associative array or a ViewableData instance'
-        );
+        throw new InvalidArgumentException('ViewableData->customise(): $data must be an associative array or a ViewableData instance');
     }
-
     /**
      * Return true if this object "exists" i.e. has a sensible value
      *
@@ -370,7 +334,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return true;
     }
-
     /**
      * @return string the class name
      */
@@ -378,7 +341,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return static::class;
     }
-
     /**
      * @return ViewableData
      */
@@ -386,7 +348,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return $this->customisedObject;
     }
-
     /**
      * @param ViewableData $object
      */
@@ -394,9 +355,7 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         $this->customisedObject = $object;
     }
-
     // CASTING ---------------------------------------------------------------------------------------------------------
-
     /**
      * Return the "casting helper" (a piece of PHP code that when evaluated creates a casted value object)
      * for a field on this object. This helper will be a subclass of DBField.
@@ -414,7 +373,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         if (isset($specs[$fieldLower])) {
             return $specs[$fieldLower];
         }
-
         // If no specific cast is declared, fall back to failover.
         // Note that if there is a failover, the default_cast will always
         // be drawn from this object instead of the top level object.
@@ -425,7 +383,6 @@ class ViewableData implements IteratorAggregate, \Stringable
                 return $cast;
             }
         }
-
         // Fall back to default_cast
         $default = $this->config()->get('default_cast');
         if (empty($default)) {
@@ -433,7 +390,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         }
         return $default;
     }
-
     /**
      * Get the class name a field on this object will be casted to.
      *
@@ -448,7 +404,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         $spec = $this->castingHelper($field);
         return trim(strtok($spec ?? '', '(') ?? '');
     }
-
     /**
      * Return the string-format type for the given field.
      *
@@ -460,14 +415,11 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         Deprecation::noticeWithNoReplacment('5.4.0', 'Will be removed without equivalent functionality to replace it in a future major release.');
         $class = $this->castingClass($field) ?: $this->config()->get('default_cast');
-
         /** @var DBField $type */
         $type = Injector::inst()->get($class, true);
         return $type->config()->get('escape_type');
     }
-
     // TEMPLATE ACCESS LAYER -------------------------------------------------------------------------------------------
-
     /**
      * Render this object into the template, and get the result as a string. You can pass one of the following as the
      * $template parameter:
@@ -484,21 +436,15 @@ class ViewableData implements IteratorAggregate, \Stringable
         if (!is_object($template)) {
             $template = SSViewer::create($template);
         }
-
         $data = $this->getCustomisedObj() ?: $this;
-
         if ($customFields instanceof ViewableData) {
             $data = $data->customise($customFields);
         }
         if ($template instanceof SSViewer) {
             return $template->process($data, is_array($customFields) ? $customFields : null);
         }
-
-        throw new UnexpectedValueException(
-            "ViewableData::renderWith(): unexpected " . $template::class . " object, expected an SSViewer instance"
-        );
+        throw new UnexpectedValueException("ViewableData::renderWith(): unexpected " . $template::class . " object, expected an SSViewer instance");
     }
-
     /**
      * Generate the cache name for a field
      *
@@ -510,11 +456,8 @@ class ViewableData implements IteratorAggregate, \Stringable
     protected function objCacheName($fieldName, $arguments)
     {
         Deprecation::noticeWithNoReplacment('5.4.0', 'Will be made private');
-        return $arguments
-            ? $fieldName . ":" . var_export($arguments, true)
-            : $fieldName;
+        return $arguments ? $fieldName . ":" . var_export($arguments, true) : $fieldName;
     }
-
     /**
      * Get a cached value from the field cache
      *
@@ -525,7 +468,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return $this->objCache[$key] ?? null;
     }
-
     /**
      * Store a value in the field cache
      *
@@ -537,7 +479,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         $this->objCache[$key] = $value;
         return $this;
     }
-
     /**
      * Clear object cache
      *
@@ -548,7 +489,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         $this->objCache = [];
         return $this;
     }
-
     /**
      * Get the value of a field on this object, automatically inserting the value into any available casting objects
      * that have been specified.
@@ -567,20 +507,17 @@ class ViewableData implements IteratorAggregate, \Stringable
         if (!$cacheName && $cache) {
             $cacheName = $this->objCacheName($fieldName, $arguments);
         }
-
         // Check pre-cached value
         $value = $cache ? $this->objCacheGet($cacheName) : null;
         if ($value !== null) {
             return $value;
         }
-
         // Load value from record
         if ($this->hasMethod($fieldName)) {
             $value = call_user_func_array([$this, $fieldName], $arguments ?: []);
         } else {
-            $value = $this->$fieldName;
+            $value = $this->{$fieldName};
         }
-
         // Cast object
         if (!is_object($value)) {
             // Force cast
@@ -589,15 +526,12 @@ class ViewableData implements IteratorAggregate, \Stringable
             $valueObject->setValue($value, $this);
             $value = $valueObject;
         }
-
         // Record in cache
         if ($cache) {
             $this->objCacheSet($cacheName, $value);
         }
-
         return $value;
     }
-
     /**
      * A simple wrapper around {@link ViewableData::obj()} that automatically caches the result so it can be used again
      * without re-running the method.
@@ -613,7 +547,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         Deprecation::notice('5.4.0', 'Use obj() instead');
         return $this->obj($fieldName, $arguments, true, $identifier);
     }
-
     /**
      * Checks if a given method/field has a valid value. If the result is an object, this will return the result of the
      * exists method, otherwise will check if the result is not just an empty paragraph tag.
@@ -628,7 +561,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         $result = $this->obj($field, $arguments, $cache);
         return $result->exists();
     }
-
     /**
      * Get the string value of a field on this object that has been suitable escaped to be inserted directly into a
      * template.
@@ -646,7 +578,6 @@ class ViewableData implements IteratorAggregate, \Stringable
         // Might contain additional formatting over ->XML(). E.g. parse shortcodes, nl2br()
         return $result->forTemplate();
     }
-
     /**
      * Get an array of XML-escaped values by field name
      *
@@ -658,16 +589,12 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         Deprecation::noticeWithNoReplacment('5.4.0');
         $result = [];
-
         foreach ($fields as $field) {
             $result[$field] = $this->XML_val($field);
         }
-
         return $result;
     }
-
     // ITERATOR SUPPORT ------------------------------------------------------------------------------------------------
-
     /**
      * Return a single-item iterator so you can iterate over the fields of a single record.
      *
@@ -678,14 +605,12 @@ class ViewableData implements IteratorAggregate, \Stringable
      *
      * @return ArrayIterator
      */
-    public function getIterator(): Traversable
+    public function getIterator() : Traversable
     {
         Deprecation::notice('5.2.0', 'Will be removed without equivalent functionality in a future major release');
         return new ArrayIterator([$this]);
     }
-
     // UTILITY METHODS -------------------------------------------------------------------------------------------------
-
     /**
      * Find appropriate templates for SSViewer to use to render this object
      *
@@ -696,7 +621,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return SSViewer::get_templates_by_class(static::class, $suffix, ViewableData::class);
     }
-
     /**
      * When rendering some objects it is necessary to iterate over the object being rendered, to do this, you need
      * access to itself.
@@ -707,7 +631,6 @@ class ViewableData implements IteratorAggregate, \Stringable
     {
         return $this;
     }
-
     /**
      * Get part of the current classes ancestry to be used as a CSS class.
      *
@@ -720,28 +643,23 @@ class ViewableData implements IteratorAggregate, \Stringable
      */
     public function CSSClasses($stopAtClass = ViewableData::class)
     {
-        $classes       = [];
+        $classes = [];
         $classAncestry = array_reverse(ClassInfo::ancestry(static::class) ?? []);
-        $stopClasses   = ClassInfo::ancestry($stopAtClass);
-
+        $stopClasses = ClassInfo::ancestry($stopAtClass);
         foreach ($classAncestry as $class) {
             if (in_array($class, $stopClasses ?? [])) {
                 break;
             }
             $classes[] = $class;
         }
-
         // optionally add template identifier
         if (isset($this->template) && !in_array($this->template, $classes ?? [])) {
             $classes[] = $this->template;
         }
-
         // Strip out namespaces
         $classes = preg_replace('#.*\\\\#', '', $classes ?? '');
-
         return Convert::raw2att(implode(' ', $classes));
     }
-
     /**
      * Return debug information about this object that can be rendered into a template
      *

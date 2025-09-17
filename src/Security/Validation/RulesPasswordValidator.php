@@ -1,13 +1,21 @@
 <?php
 
-namespace SilverStripe\Security;
+/**
+ * CMS 6 Polyfill for SilverStripe\Security\PasswordValidator
+ * 
+ * This class provides forward compatibility by making the CMS 6 namespace
+ * available in CMS 5, allowing you to migrate your code early.
+ * 
+ * @package silverstripe-six-polyfill
+ */
+
+namespace SilverStripe\Security\Validation\Validation;
 
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\ValidationResult;
-
 /**
  * This class represents a validator for member passwords.
  *
@@ -23,70 +31,50 @@ use SilverStripe\ORM\ValidationResult;
  *
  * @deprecated 5.4.0 Will be renamed to SilverStripe\Security\Validation\RulesPasswordValidator
  */
-class PasswordValidator
+class RulesPasswordValidator
 {
     use Injectable;
     use Configurable;
     use Extensible;
-
     /**
      * @config
      * @var array
      */
-    private static $character_strength_tests = [
-        'lowercase' => '/[a-z]/',
-        'uppercase' => '/[A-Z]/',
-        'digits' => '/[0-9]/',
-        'punctuation' => '/[^A-Za-z0-9]/',
-    ];
-
+    private static $character_strength_tests = ['lowercase' => '/[a-z]/', 'uppercase' => '/[A-Z]/', 'digits' => '/[0-9]/', 'punctuation' => '/[^A-Za-z0-9]/'];
     /**
      * @config
      * @var int
      */
     private static $min_length = null;
-
     /**
      * @config
      * @var int
      */
     private static $min_test_score = null;
-
     /**
      * @config
      * @var int
      */
     private static $historic_count = null;
-
     /**
      * @var int
      */
     protected $minLength = null;
-
     /**
      * @var int
      */
     protected $minScore = null;
-
     /**
      * @var string[]
      */
     protected $testNames = null;
-
     /**
      * @var int
      */
     protected $historicalPasswordCount = null;
-
     public function __construct()
     {
-        Deprecation::notice(
-            '5.4.0',
-            'Will be renamed to SilverStripe\Security\Validation\RulesPasswordValidator in a future major release',
-            Deprecation::SCOPE_CLASS
-        );
     }
-
     /**
      * @return int
      */
@@ -97,7 +85,6 @@ class PasswordValidator
         }
         return $this->config()->get('min_length');
     }
-
     /**
      * @param int $minLength
      * @return $this
@@ -107,7 +94,6 @@ class PasswordValidator
         $this->minLength = $minLength;
         return $this;
     }
-
     /**
      * @return integer
      */
@@ -118,7 +104,6 @@ class PasswordValidator
         }
         return $this->config()->get('min_test_score');
     }
-
     /**
      * @param int $minScore
      * @return $this
@@ -128,7 +113,6 @@ class PasswordValidator
         $this->minScore = $minScore;
         return $this;
     }
-
     /**
      * Gets the list of tests to use for this validator
      *
@@ -141,7 +125,6 @@ class PasswordValidator
         }
         return array_keys(array_filter($this->getTests() ?? []));
     }
-
     /**
      * Set list of tests to use for this validator
      *
@@ -153,7 +136,6 @@ class PasswordValidator
         $this->testNames = $testNames;
         return $this;
     }
-
     /**
      * @return int
      */
@@ -164,7 +146,6 @@ class PasswordValidator
         }
         return $this->config()->get('historic_count');
     }
-
     /**
      * @param int $count
      * @return $this
@@ -174,7 +155,6 @@ class PasswordValidator
         $this->historicalPasswordCount = $count;
         return $this;
     }
-
     /**
      * Gets all possible tests
      *
@@ -184,7 +164,6 @@ class PasswordValidator
     {
         return $this->config()->get('character_strength_tests');
     }
-
     /**
      * @param string $password
      * @param Member $member
@@ -193,67 +172,41 @@ class PasswordValidator
     public function validate($password, $member)
     {
         $valid = ValidationResult::create();
-
         $minLength = $this->getMinLength();
         if ($minLength && strlen($password ?? '') < $minLength) {
-            $error = _t(
-                self::class . '.TOOSHORT',
-                'Password is too short, it must be {minimum} or more characters long',
-                ['minimum' => $minLength]
-            );
-
+            $error = _t(self::class . '.TOOSHORT', 'Password is too short, it must be {minimum} or more characters long', ['minimum' => $minLength]);
             $valid->addError($error, 'bad', 'TOO_SHORT');
         }
-
         $minTestScore = $this->getMinTestScore();
         if ($minTestScore) {
             $missedTests = [];
             $testNames = $this->getTestNames();
             $tests = $this->getTests();
-
             foreach ($testNames as $name) {
                 if (preg_match($tests[$name] ?? '', $password ?? '')) {
                     continue;
                 }
                 /** @phpstan-ignore translation.key (we need the key to be dynamic here) */
-                $missedTests[] = _t(
-                    self::class . '.STRENGTHTEST' . strtoupper($name ?? ''),
-                    $name,
-                    'The user needs to add this to their password for more complexity'
-                );
+                $missedTests[] = _t(self::class . '.STRENGTHTEST' . strtoupper($name ?? ''), $name, 'The user needs to add this to their password for more complexity');
             }
-
             $score = count($testNames ?? []) - count($missedTests ?? []);
             if ($missedTests && $score < $minTestScore) {
-                $error = _t(
-                    self::class . '.LOWCHARSTRENGTH',
-                    'Please increase password strength by adding some of the following characters: {chars}',
-                    ['chars' => implode(', ', $missedTests)]
-                );
+                $error = _t(self::class . '.LOWCHARSTRENGTH', 'Please increase password strength by adding some of the following characters: {chars}', ['chars' => implode(', ', $missedTests)]);
                 $valid->addError($error, 'bad', 'LOW_CHARACTER_STRENGTH');
             }
         }
-
         $historicCount = $this->getHistoricCount();
         if ($historicCount) {
-            $previousPasswords = MemberPassword::get()
-                ->where(['"MemberPassword"."MemberID"' => $member->ID])
-                ->sort('"Created" DESC, "ID" DESC')
-                ->limit($historicCount);
+            $previousPasswords = MemberPassword::get()->where(['"MemberPassword"."MemberID"' => $member->ID])->sort('"Created" DESC, "ID" DESC')->limit($historicCount);
             foreach ($previousPasswords as $previousPassword) {
                 if ($previousPassword->checkPassword($password)) {
-                    $error = _t(
-                        self::class . '.PREVPASSWORD',
-                        'You\'ve already used that password in the past, please choose a new password'
-                    );
+                    $error = _t(self::class . '.PREVPASSWORD', 'You\'ve already used that password in the past, please choose a new password');
                     $valid->addError($error, 'bad', 'PREVIOUS_PASSWORD');
                     break;
                 }
             }
         }
-
         $this->extend('updateValidatePassword', $password, $member, $valid, $this);
-
         return $valid;
     }
 }
