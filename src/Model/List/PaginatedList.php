@@ -14,7 +14,7 @@ namespace SilverStripe\Model\List;
 use SilverStripe\Control\HTTP;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\Queries\SQLSelect;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 use ArrayAccess;
 use Exception;
 use IteratorIterator;
@@ -26,7 +26,6 @@ use Traversable;
  * @template TList of SS_List
  * @template T
  * @extends ListDecorator<TList, T>
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\List\PaginatedList
  */
 class PaginatedList extends ListDecorator
 {

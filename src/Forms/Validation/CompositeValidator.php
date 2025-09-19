@@ -12,7 +12,7 @@
 namespace SilverStripe\Forms\Validation\Validation;
 
 use InvalidArgumentException;
-use SilverStripe\ORM\ValidationResult;
+use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Dev\Deprecation;
 /**
  * CompositeValidator can contain between 0 and many different types of Validators. Each Validator is itself still
@@ -39,7 +39,6 @@ use SilverStripe\Dev\Deprecation;
  * {
  *   $compositeValidator->addValidator(RequiredFields::create(['AdditionalContent']));
  * }
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Forms\Validation\CompositeValidator
  */
 class CompositeValidator extends Validator
 {

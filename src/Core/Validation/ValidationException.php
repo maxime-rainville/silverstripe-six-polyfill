@@ -20,7 +20,6 @@ use SilverStripe\Dev\Deprecation;
  * exception rather than a user error, the exception can be caught in unit tests and as such
  * can be used as a successful test.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Core\Validation\ValidationException
  */
 class ValidationException extends Exception
 {

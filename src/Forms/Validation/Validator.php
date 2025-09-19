@@ -9,19 +9,18 @@
  * @package silverstripe-six-polyfill
  */
 
-namespace SilverStripe\Forms\Validation\Validation;
+namespace SilverStripe\Forms\Validation;
 
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\ORM\ValidationResult;
+use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Dev\Deprecation;
 /**
  * This validation class handles all form and custom form validation through the use of Required
  * fields. It relies on javascript for client-side validation, and marking fields after server-side
  * validation. It acts as a visitor to individual form fields.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Forms\Validation\Validator
  */
 abstract class Validator
 {

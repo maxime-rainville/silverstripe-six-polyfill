@@ -15,7 +15,7 @@ use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Dev\Deprecation;
-use SilverStripe\ORM\ValidationResult;
+use SilverStripe\Core\Validation\ValidationResult;
 /**
  * This class represents a validator for member passwords.
  *
@@ -29,7 +29,6 @@ use SilverStripe\ORM\ValidationResult;
  * Member::set_password_validator($pwdValidator);
  * </code>
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Security\Validation\RulesPasswordValidator
  */
 class RulesPasswordValidator
 {

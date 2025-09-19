@@ -18,7 +18,6 @@ use SilverStripe\Dev\Deprecation;
  * so we can't know if the template will run, just if it's malformed. It also won't catch mistakes that still look
  * valid.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\TemplateEngine\Exception\SSTemplateParseException
  */
 class SSTemplateParseException extends Exception
 {

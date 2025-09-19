@@ -11,7 +11,7 @@
 
 namespace SilverStripe\Model;
 
-use SilverStripe\ORM\ArrayLib;
+use SilverStripe\Core\ArrayLib;
 use InvalidArgumentException;
 use SilverStripe\Dev\Deprecation;
 use stdClass;
@@ -25,9 +25,8 @@ use stdClass;
  * ));
  * </code>
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\ArrayData
  */
-class ArrayData extends ViewableData
+class ArrayData extends ModelData
 {
     /**
      * @var array
@@ -84,7 +83,7 @@ class ArrayData extends ViewableData
     public function getField($field)
     {
         $value = $this->array[$field];
-        if (is_object($value) && !$value instanceof ViewableData) {
+        if (is_object($value) && !$value instanceof ModelData) {
             return new ArrayData($value);
         } elseif (ArrayLib::is_associative($value)) {
             return new ArrayData($value);
@@ -96,9 +95,10 @@ class ArrayData extends ViewableData
      * Add or set a field on this object.
      *
      * @param string $field
+     * @param mixed $value
      * @return $this
      */
-    public function setField($field, mixed $value)
+    public function setField($field, $value)
     {
         $this->array[$field] = $value;
         return $this;

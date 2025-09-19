@@ -20,7 +20,6 @@ use Traversable;
 /**
  * Creates a map from an SS_List by defining a key column and a value column.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\List\Map
  */
 class Map implements ArrayAccess, Countable, IteratorAggregate
 {

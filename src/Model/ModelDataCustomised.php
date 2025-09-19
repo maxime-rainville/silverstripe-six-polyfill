@@ -13,9 +13,8 @@ namespace SilverStripe\Model;
 
 use SilverStripe\Dev\Deprecation;
 /**
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\ModelDataCustomised
  */
-class ModelDataCustomised extends ViewableData
+class ModelDataCustomised extends ModelData
 {
     /**
      * @var ViewableData

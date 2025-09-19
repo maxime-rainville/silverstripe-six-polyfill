@@ -21,8 +21,8 @@ use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
 use SilverStripe\ORM\Filters\SearchFilter;
 use SilverStripe\ORM\Filters\SearchFilterable;
-use SilverStripe\View\ArrayData;
-use SilverStripe\View\ViewableData;
+use SilverStripe\Model\ArrayData;
+use SilverStripe\Model\ModelData;
 use Traversable;
 /**
  * A list object that wraps around an array of objects or arrays.
@@ -43,9 +43,8 @@ use Traversable;
  * @implements Filterable<T>
  * @implements Sortable<T>
  * @implements Limitable<T>
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\List\ArrayList
  */
-class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, Limitable
+class ArrayList extends ModelData implements SS_List, Filterable, Sortable, Limitable
 {
     use SearchFilterable;
     /**
@@ -532,7 +531,7 @@ class ArrayList extends ViewableData implements SS_List, Filterable, Sortable, L
         if (is_array($firstRecord)) {
             return array_key_exists($by, $firstRecord);
         }
-        if ($firstRecord instanceof ViewableData) {
+        if ($firstRecord instanceof ModelData) {
             return $firstRecord->hasField($by);
         }
         return property_exists($firstRecord, $by ?? '');

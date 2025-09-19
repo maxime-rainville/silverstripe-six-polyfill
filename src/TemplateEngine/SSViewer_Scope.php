@@ -20,7 +20,7 @@ use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\ORM\FieldType\DBFloat;
 use SilverStripe\ORM\FieldType\DBInt;
 use SilverStripe\ORM\FieldType\DBField;
-use SilverStripe\ORM\PaginatedList;
+use SilverStripe\Model\List\PaginatedList;
 /**
  * This tracks the current scope for an SSViewer instance. It has three goals:
  *   - Handle entering & leaving sub-scopes in loops and withs
@@ -40,7 +40,6 @@ use SilverStripe\ORM\PaginatedList;
  * when in a loop or with tag the end result becomes the new scope, but for injections, we throw away the lookup
  * and revert back to the original scope once we've got the value we're after
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\TemplateEngine\ScopeManager
  */
 class SSViewer_Scope
 {
@@ -300,7 +299,7 @@ class SSViewer_Scope
     public function __call($name, $arguments)
     {
         $on = $this->getCurrentItem();
-        if ($on instanceof ViewableData && $name === 'XML_val') {
+        if ($on instanceof ModelData && $name === 'XML_val') {
             $retval = $on->XML_val(...$arguments);
         } else {
             $retval = $on ? $on->{$name}(...$arguments) : null;

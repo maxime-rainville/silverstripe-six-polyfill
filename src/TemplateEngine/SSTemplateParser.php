@@ -56,7 +56,6 @@ if (defined('THIRDPARTY_PATH')) {
  * Angle Bracket: angle brackets "<" and ">" are used to eat whitespace between template elements
  * N: eats white space including newlines (using in legacy _t support)
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\TemplateEngine\SSTemplateParser
  */
 class SSTemplateParser extends Parser implements TemplateParser
 {

@@ -12,7 +12,7 @@
 namespace SilverStripe\Model\List;
 
 use SilverStripe\Dev\Deprecation;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 /**
  * A list decorator that allows a list to be grouped into sub-lists by common
  * values of a field.
@@ -20,7 +20,6 @@ use SilverStripe\View\ArrayData;
  * @template TList
  * @template T
  * @extends ListDecorator<TList, T>
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\List\GroupedList
  */
 class GroupedList extends ListDecorator
 {

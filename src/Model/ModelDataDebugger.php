@@ -15,9 +15,8 @@ use ReflectionObject;
 use SilverStripe\Dev\Deprecation;
 /**
  * Allows you to render debug information about a {@link ViewableData} object into a template.
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\ModelDataDebugger
  */
-class ModelDataDebugger extends ViewableData implements \Stringable
+class ModelDataDebugger extends ModelData
 {
     /**
      * @var ViewableData
@@ -80,7 +79,7 @@ class ModelDataDebugger extends ViewableData implements \Stringable
         }
         // check for an extra attached data
         if ($this->object->hasMethod('data') && $this->object->data() != $this->object) {
-            $debug .= ViewableData_Debugger::create($this->object->data())->forTemplate();
+            $debug .= ModelDataDebugger::create($this->object->data())->forTemplate();
         }
         return $debug;
     }

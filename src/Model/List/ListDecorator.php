@@ -11,7 +11,7 @@
 
 namespace SilverStripe\Model\List;
 
-use SilverStripe\View\ViewableData;
+use SilverStripe\Model\ModelData;
 use LogicException;
 use SilverStripe\Dev\Deprecation;
 use Traversable;
@@ -26,9 +26,8 @@ use Traversable;
  * @implements Sortable<T>
  * @implements Filterable<T>
  * @implements Limitable<T>
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\List\ListDecorator
  */
-abstract class ListDecorator extends ViewableData implements SS_List, Sortable, Filterable, Limitable
+abstract class ListDecorator extends ModelData implements SS_List, Sortable, Filterable, Limitable
 {
     /**
      * @var TList<T>

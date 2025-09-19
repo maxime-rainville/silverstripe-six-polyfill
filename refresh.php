@@ -133,7 +133,7 @@ class PolyfillRefresher
             $ast = $parser->parse($content);
             
             // Create node visitor for transformations
-            $visitor = new ConfigurablePolyfillTransformVisitor($sourceClass, $config);
+            $visitor = new ConfigurablePolyfillTransformVisitor($sourceClass, $config, $this->classConfigs);
             
             $traverser = new NodeTraverser();
             $traverser->addVisitor($visitor);
@@ -241,8 +241,9 @@ class ConfigurablePolyfillTransformVisitor extends NodeVisitorAbstract
     private string $sourceNamespace;
     private string $sourceClassName;
     private array $nodesToRemove = [];
+    private array $classMapping = [];
 
-    public function __construct(string $sourceClass, array $config)
+    public function __construct(string $sourceClass, array $config, array $allClassConfigs = [])
     {
         $this->sourceClass = $sourceClass;
         $this->config = $config;
@@ -251,6 +252,20 @@ class ConfigurablePolyfillTransformVisitor extends NodeVisitorAbstract
         $parts = explode('\\', $sourceClass);
         $this->sourceClassName = array_pop($parts);
         $this->sourceNamespace = implode('\\', $parts);
+        
+        // Build class mapping for namespace reference updates
+        $this->buildClassMapping($allClassConfigs);
+    }
+    
+    /**
+     * Build a mapping of old class FQCNs to new class FQCNs for updating cross-references
+     */
+    private function buildClassMapping(array $allClassConfigs): void
+    {
+        foreach ($allClassConfigs as $oldClassName => $classConfig) {
+            $newClassName = $classConfig['target_namespace'] . '\\' . $classConfig['target_class'];
+            $this->classMapping[$oldClassName] = $newClassName;
+        }
     }
 
     public function enterNode(Node $node)
@@ -300,13 +315,168 @@ class ConfigurablePolyfillTransformVisitor extends NodeVisitorAbstract
             }
         }
         
-        // Transform class names
+        // Transform class names and DocBlocks
         if ($node instanceof Node\Stmt\Class_) {
+            $updated = false;
+            
+            // Update class name
             if ($node->name && $node->name->toString() === $this->sourceClassName) {
                 $targetClassName = $this->config['target_class'];
                 if ($targetClassName !== $this->sourceClassName) {
                     $node->name = new Node\Identifier($targetClassName);
-                    return $node;
+                    $updated = true;
+                }
+            }
+            
+            // Update extends clause
+            if ($node->extends) {
+                $extendsClassName = $node->extends->toString();
+                foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                    $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                    if ($extendsClassName === $oldShortName) {
+                        $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                        $node->extends = new Node\Name($newShortName);
+                        $updated = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Update implements clause
+            if ($node->implements) {
+                foreach ($node->implements as $key => $interface) {
+                    $interfaceName = $interface->toString();
+                    foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                        $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                        if ($interfaceName === $oldShortName) {
+                            $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                            $node->implements[$key] = new Node\Name($newShortName);
+                            $updated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Remove class-level @deprecated annotations about renaming
+            if ($this->removeClassOrInterfaceLevelDeprecationFromDocBlock($node)) {
+                $updated = true;
+            }
+            
+            if ($updated) {
+                return $node;
+            }
+        }
+        
+        // Transform interface names and DocBlocks  
+        if ($node instanceof Node\Stmt\Interface_) {
+            $updated = false;
+            
+            // Update interface name
+            if ($node->name && $node->name->toString() === $this->sourceClassName) {
+                $targetClassName = $this->config['target_class'];
+                if ($targetClassName !== $this->sourceClassName) {
+                    $node->name = new Node\Identifier($targetClassName);
+                    $updated = true;
+                }
+            }
+            
+            // Update extends clause for interfaces
+            if ($node->extends) {
+                foreach ($node->extends as $key => $interface) {
+                    $interfaceName = $interface->toString();
+                    foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                        $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                        if ($interfaceName === $oldShortName) {
+                            $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                            $node->extends[$key] = new Node\Name($newShortName);
+                            $updated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Remove interface-level @deprecated annotations about renaming
+            if ($this->removeClassOrInterfaceLevelDeprecationFromDocBlock($node)) {
+                $updated = true;
+            }
+            
+            if ($updated) {
+                return $node;
+            }
+        }
+        
+        // Transform use statements that reference classes in our mapping
+        if ($node instanceof Node\Stmt\Use_) {
+            $updated = false;
+            foreach ($node->uses as $use) {
+                $className = $use->name->toString();
+                if (isset($this->classMapping[$className])) {
+                    $newClassName = $this->classMapping[$className];
+                    $use->name = new Node\Name($newClassName);
+                    $updated = true;
+                }
+            }
+            if ($updated) {
+                return $node;
+            }
+        }
+        
+        // Transform class name references in code (e.g., ArrayData::class, new ViewableData())
+        if ($node instanceof Node\Expr\ClassConstFetch) {
+            $className = $node->class->toString();
+            if (isset($this->classMapping[$className])) {
+                $newClassName = $this->classMapping[$className];
+                $parts = explode('\\', $newClassName);
+                $node->class = new Node\Name(end($parts)); // Use just the class name, not FQCN
+                return $node;
+            }
+        }
+        
+        // Transform class instantiations (e.g., new ViewableData())
+        if ($node instanceof Node\Expr\New_) {
+            if ($node->class instanceof Node\Name) {
+                $className = $node->class->toString();
+                // Check both short name and full name
+                foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                    $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                    if ($className === $oldShortName) {
+                        $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                        $node->class = new Node\Name($newShortName);
+                        return $node;
+                    }
+                }
+            }
+        }
+        
+        // Transform static method calls (e.g., ViewableData::create())
+        if ($node instanceof Node\Expr\StaticCall) {
+            if ($node->class instanceof Node\Name) {
+                $className = $node->class->toString();
+                // Check both short name and full name
+                foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                    $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                    if ($className === $oldShortName) {
+                        $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                        $node->class = new Node\Name($newShortName);
+                        return $node;
+                    }
+                }
+            }
+        }
+        
+        // Transform instanceof expressions (e.g., $item instanceof ViewableData)
+        if ($node instanceof Node\Expr\Instanceof_) {
+            if ($node->class instanceof Node\Name) {
+                $className = $node->class->toString();
+                foreach ($this->classMapping as $oldFqcn => $newFqcn) {
+                    $oldShortName = substr($oldFqcn, strrpos($oldFqcn, '\\') + 1);
+                    if ($className === $oldShortName) {
+                        $newShortName = substr($newFqcn, strrpos($newFqcn, '\\') + 1);
+                        $node->class = new Node\Name($newShortName);
+                        return $node;
+                    }
                 }
             }
         }
@@ -468,6 +638,61 @@ class ConfigurablePolyfillTransformVisitor extends NodeVisitorAbstract
             }
         }
         return false;
+    }
+    
+    /**
+     * Remove class/interface-level @deprecated annotations about renaming while preserving other deprecations
+     */
+    private function removeClassOrInterfaceLevelDeprecationFromDocBlock($node): bool
+    {
+        $docComment = $node->getDocComment();
+        if (!$docComment) {
+            return false;
+        }
+        
+        $originalText = $docComment->getText();
+        $updatedText = $this->processDocBlockText($originalText);
+        
+        if ($originalText !== $updatedText) {
+            $node->setDocComment(new \PhpParser\Comment\Doc($updatedText));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Process DocBlock text to remove class-level @deprecated annotations about renaming
+     */
+    private function processDocBlockText(string $docBlockText): string
+    {
+        // Split into lines while preserving line endings
+        $lines = explode("\n", $docBlockText);
+        $updatedLines = [];
+        
+        foreach ($lines as $line) {
+            // Check if this line contains a @deprecated annotation about renaming
+            if ($this->isClassLevelRenamingDeprecation($line)) {
+                // Skip this line (remove it)
+                continue;
+            }
+            
+            $updatedLines[] = $line;
+        }
+        
+        return implode("\n", $updatedLines);
+    }
+    
+    /**
+     * Check if a DocBlock line contains a class-level renaming deprecation
+     */
+    private function isClassLevelRenamingDeprecation(string $line): bool
+    {
+        // Match lines like: " * @deprecated 5.4.0 Will be renamed to SilverStripe\..."
+        // or " * @deprecated 5.4.0 Will be moved to SilverStripe\..."
+        $pattern = '/^\s*\*\s*@deprecated\s+[\d.]+\s+(Will be renamed to|Will be moved to)\s+SilverStripe\\\\/i';
+        
+        return preg_match($pattern, $line) === 1;
     }
 }
 

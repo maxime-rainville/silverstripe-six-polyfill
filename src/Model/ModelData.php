@@ -28,7 +28,7 @@ use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\Debug;
 use SilverStripe\Dev\Deprecation;
-use SilverStripe\ORM\ArrayLib;
+use SilverStripe\Core\ArrayLib;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\View\SSViewer;
@@ -41,7 +41,6 @@ use UnexpectedValueException;
  * is provided and automatically escaped by ViewableData. Any class that needs to be available to a view (controllers,
  * {@link DataObject}s, page controls) should inherit from this class.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Model\ModelData
  */
 class ModelData implements IteratorAggregate, \Stringable
 {
@@ -317,8 +316,8 @@ class ModelData implements IteratorAggregate, \Stringable
         if (is_array($data) && (empty($data) || ArrayLib::is_associative($data))) {
             $data = new ArrayData($data);
         }
-        if ($data instanceof ViewableData) {
-            return new ViewableData_Customised($this, $data);
+        if ($data instanceof ModelData) {
+            return new ModelDataCustomised($this, $data);
         }
         throw new InvalidArgumentException('ViewableData->customise(): $data must be an associative array or a ViewableData instance');
     }
@@ -437,7 +436,7 @@ class ModelData implements IteratorAggregate, \Stringable
             $template = SSViewer::create($template);
         }
         $data = $this->getCustomisedObj() ?: $this;
-        if ($customFields instanceof ViewableData) {
+        if ($customFields instanceof ModelData) {
             $data = $data->customise($customFields);
         }
         if ($template instanceof SSViewer) {
@@ -667,6 +666,6 @@ class ModelData implements IteratorAggregate, \Stringable
      */
     public function Debug()
     {
-        return new ViewableData_Debugger($this);
+        return new ModelDataDebugger($this);
     }
 }

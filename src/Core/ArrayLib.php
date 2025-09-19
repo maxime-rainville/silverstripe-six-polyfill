@@ -16,7 +16,6 @@ use SilverStripe\Dev\Deprecation;
 use InvalidArgumentException;
 /**
  * Library of static methods for manipulating arrays.
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Core\ArrayLib
  */
 class ArrayLib
 {

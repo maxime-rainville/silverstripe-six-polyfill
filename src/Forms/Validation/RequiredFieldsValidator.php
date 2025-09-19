@@ -11,7 +11,7 @@
 
 namespace SilverStripe\Forms\Validation\Validation;
 
-use SilverStripe\ORM\ArrayLib;
+use SilverStripe\Core\ArrayLib;
 use SilverStripe\Dev\Deprecation;
 /**
  * Required Fields allows you to set which fields need to be present before
@@ -21,7 +21,6 @@ use SilverStripe\Dev\Deprecation;
  * Validation is performed on a field by field basis through
  * {@link FormField::validate}.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Forms\Validation\RequiredFieldsValidator
  */
 class RequiredFieldsValidator extends Validator
 {

@@ -21,7 +21,6 @@ use SilverStripe\Dev\Deprecation;
  * Each message can have a code or field which will uniquely identify that message. However,
  * messages can be stored without a field or message as an "overall" message.
  *
- * @deprecated 5.4.0 Will be renamed to SilverStripe\Core\Validation\ValidationResult
  */
 class ValidationResult
 {
